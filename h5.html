@@ -221,7 +221,7 @@
                 <span>1. Adım: E-Posta Gönder</span>
             </button>
 
-            <!-- 2. Adım Butonu: WhatsApp ile Gönder (Başta Pasif/Gizli veya Gri görünür) -->
+            <!-- 2. Adım Butonu: WhatsApp ile Gönder (Başta Pasif/Gizli) -->
             <button id="whatsappBtn" onclick="sendToWhatsApp()" class="w-full bg-gradient-to-r from-emerald-600 to-teal-600 active:scale-[0.98] text-white font-bold py-3.5 px-5 rounded-2xl shadow-lg shadow-emerald-900/40 transition-all duration-200 flex items-center justify-center gap-3 text-base border border-emerald-500/30 opacity-50 cursor-not-allowed" disabled>
                 <i class="fa-brands fa-whatsapp text-2xl"></i>
                 <span>2. Adım: WhatsApp ile Gönder</span>
@@ -479,7 +479,7 @@
                 message += `----------------------------------\n`;
                 message += `📊 Üretim ve Kasa Durumları:\n`;
                 parts.forEach(partNo => {
-                    if (dataMap[partNo]) message += `•${partNo}➔Üretilen: ${dataMap[partNo].uretilen} | Kalan: ${dataMap[partNo].kalan}\n`;
+                    if (dataMap[partNo]) message += `• ${partNo} ➔ Üretilen: ${dataMap[partNo].uretilen} | Kalan: ${dataMap[partNo].kalan}\n`;
                 });
             }
 
@@ -570,7 +570,7 @@
 
             try {
                 const templateParams = {
-                    to_email: "cmf1_mnt_tl8@coskunoz.com.tr", 
+                    to_email: "ozgur_zengin@hotmail.com", 
                     report_title: dynamicSubject,
                     message_body: finalMessage
                 };
@@ -593,7 +593,7 @@
             }
         }
 
-        // 2. ADIM: Kullanıcı Tıkladığında WhatsApp Paylaşımını Başlat
+        // 2. ADIM: WhatsApp ile Gönder ve Ardından Sayfayı Sıfırla/Yenile
         async function sendToWhatsApp() {
             if (!selectedCell) return;
             const message = generateReportText();
@@ -617,6 +617,11 @@
                         text: message,
                         files: filesToShare
                     });
+                    
+                    // Paylaşım bittikten sonra sayfayı sıfırla
+                    setTimeout(() => {
+                        location.reload();
+                    }, 1000);
                     return;
                 } catch (err) {
                     if (err.name === 'AbortError') return;
@@ -626,6 +631,11 @@
             const encodedMessage = encodeURIComponent(message);
             const whatsappUrl = `https://api.whatsapp.com/send?text=${encodedMessage}`;
             window.open(whatsappUrl, '_blank');
+
+            // Web üzerinden WhatsApp açıldıktan sonra sayfayı sıfırla
+            setTimeout(() => {
+                location.reload();
+            }, 1500);
         }
     </script>
 </body>
