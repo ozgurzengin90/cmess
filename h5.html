@@ -166,7 +166,7 @@
             </div>
         </div>
 
-        <!-- Photo Attachment Card (Geri Eklendi) -->
+        <!-- Photo Attachment Card -->
         <div class="bg-cardBg border border-cardBorder rounded-2xl p-4 shadow-xl space-y-3">
             <label class="block text-xs font-bold text-purple-300 uppercase tracking-wider flex items-center justify-between">
                 <span class="flex items-center gap-1.5"><i class="fa-solid fa-camera text-purple-400"></i> Fotoğraf Ekle (Opsiyonel)</span>
@@ -202,7 +202,6 @@
 
         <!-- Action Buttons -->
         <div class="space-y-2.5 pt-1">
-            <!-- Önce E-Posta Atıp Sonra WhatsApp'ı Çalıştıran Buton -->
             <button onclick="sendEmailAndWhatsApp()" class="w-full bg-gradient-to-r from-purple-600 via-pink-600 to-emerald-600 active:scale-[0.98] text-white font-bold py-3.5 px-5 rounded-2xl shadow-lg shadow-purple-900/40 transition-all duration-200 flex items-center justify-center gap-3 text-base border border-purple-500/30">
                 <i class="fa-solid fa-paper-plane text-xl"></i>
                 <span>E-Posta Gönder & WhatsApp'a Aktar</span>
@@ -355,7 +354,6 @@
             });
         }
 
-        // Fotoğraf Yükleme Fonksiyonları
         function handleImageUpload(event) {
             const files = event.target.files;
             if (!files || files.length === 0) return;
@@ -427,7 +425,7 @@
             box.classList.remove('hidden');
         }
 
-        function generateReportText() {
+        function generateReportText(photoLinks = "") {
             const shiftTime = document.getElementById('shiftTime').value;
             if (!selectedCell || !shiftTime) return null;
 
@@ -465,9 +463,9 @@
                 });
             }
 
-            if (uploadedPhotos.length > 0) {
+            if (photoLinks) {
                 message += `----------------------------------\n`;
-                message += `📸 Eklenen Fotoğraf Sayısı: ${uploadedPhotos.length} adet\n`;
+                message += `📸 Rapor Fotoğrafları:\n${photoLinks}\n`;
             }
 
             message += `----------------------------------\n`;
@@ -503,46 +501,76 @@
             showNotification("Rapor metni panoya kopyalandı!", "success");
         }
 
-        // HİBRİT AKIŞ: Önce E-Posta Gönder, Başarılı Olunca WhatsApp İşlemine Devam Et
+        // HİBRİT AKIŞ: ImgBB'ye Yükleme + EmailJS + WhatsApp
         async function sendEmailAndWhatsApp() {
             if (!selectedCell) {
                 showNotification("Lütfen önce bir hücre seçiniz!", "error");
                 return;
             }
             const shiftTime = document.getElementById('shiftTime').value;
-            const message = generateReportText();
-            if (!message || !shiftTime) {
+            if (!shiftTime) {
                 showNotification("Lütfen geçerli bir saat giriniz!", "error");
                 return;
             }
 
+            showNotification("Fotoğraflar yükleniyor ve e-posta gönderiliyor...", "success");
+
+            let photoLinksText = "";
+
+            // 1. ADIM: Fotoğraflar varsa ImgBB'ye yükle
+            if (uploadedPhotos.length > 0) {
+                const imgbbApiKey = "2a28102fa3199d44d2a11fd1e71ae2f0"; 
+                const linkArray = [];
+
+                for (let i = 0; i < uploadedPhotos.length; i++) {
+                    try {
+                        const base64Data = uploadedPhotos[i].data.split(',')[1]; 
+                        const formData = new FormData();
+                        formData.append("image", base64Data);
+
+                        const res = await fetch(`https://api.imgbb.com/1/upload?key=${imgbbApiKey}`, {
+                            method: "POST",
+                            body: formData
+                        });
+                        const data = await res.json();
+                        if (data.success) {
+                            linkArray.push(`🔗 Fotoğraf ${i + 1}: ${data.data.url}`);
+                        }
+                    } catch (err) {
+                        console.error("ImgBB yükleme hatası:", err);
+                    }
+                }
+                photoLinksText = linkArray.join('\n');
+            }
+
+            const finalMessage = generateReportText(photoLinksText);
+
+            // Mail Konusu: Tarih | Saat | Hücre No | Vardiya Başlangıcı/Bitişi
             const currentDateStr = new Date().toLocaleDateString('tr-TR');
             const modeText = currentMode === 'start' ? 'Vardiya Başlangıcı' : 'Vardiya Bitişi';
             const dynamicSubject = `${currentDateStr} - ${shiftTime} - ${selectedCell} - ${modeText}`;
 
-            showNotification("E-posta gönderiliyor...", "success");
-
             try {
                 const templateParams = {
-                    to_email: "ozgur_zengin@hotmail.com", 
+                    to_email: "cmf1_mnt_tl8@coskunoz.com.tr", 
                     report_title: dynamicSubject,
-                    message_body: message
+                    message_body: finalMessage
                 };
 
-                // 1. ADIM: EmailJS ile e-postayı gönder
+                // 2. ADIM: EmailJS ile e-postayı gönder
                 const response = await emailjs.send('service_nar6lhb', 'template_0d6dg8g', templateParams);
                 
                 if (response.status === 200) {
-                    showNotification("✔ E-posta ozgur_zengin@hotmail.com adresine gönderildi. WhatsApp açılıyor...", "success");
+                    showNotification("✔ E-posta fotoğraf linkleriyle birlikte gönderildi! WhatsApp açılıyor...", "success");
                 } else {
-                    showNotification("⚠ E-posta gönderilemedi! (Kod: " + response.status + ") WhatsApp'a yönlendiriliyor...", "error");
+                    showNotification("⚠ E-posta gönderilemedi! WhatsApp'a yönlendiriliyor...", "error");
                 }
             } catch (error) {
                 console.error("EmailJS Hata:", error);
                 showNotification("❌ E-posta hatası! WhatsApp'a yönlendiriliyor...", "error");
             }
 
-            // 2. ADIM: E-posta işleminden sonra kesintisiz olarak WhatsApp akışını başlat
+            // 3. ADIM: E-posta işleminden sonra WhatsApp akışını başlat
             setTimeout(async () => {
                 const filesToShare = [];
                 for (let i = 0; i < uploadedPhotos.length; i++) {
@@ -556,12 +584,11 @@
                     }
                 }
 
-                // Mobil cihazlarda Web Share API ile fotoğraflı paylaşım
                 if (navigator.share && filesToShare.length > 0 && navigator.canShare && navigator.canShare({ files: filesToShare })) {
                     try {
                         await navigator.share({
                             title: 'CMESS-PLC Vardiya Raporu',
-                            text: message,
+                            text: finalMessage,
                             files: filesToShare
                         });
                         return;
@@ -570,8 +597,7 @@
                     }
                 }
 
-                // Standart WhatsApp yönlendirmesi
-                const encodedMessage = encodeURIComponent(message);
+                const encodedMessage = encodeURIComponent(finalMessage);
                 const whatsappUrl = `https://api.whatsapp.com/send?text=${encodedMessage}`;
                 window.open(whatsappUrl, '_blank');
             }, 1000);
