@@ -1,0 +1,581 @@
+<!DOCTYPE html>
+<html lang="tr" class="dark">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>CMESS-PLC & Raporlama</title>
+    
+    <!-- Dynamic SVG Favicon -->
+    <link rel="icon" type="image/svg+xml" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><rect width='100' height='100' rx='25' fill='%23130d24'/><path d='M30 40 h40 v35 a10 10 0 0 1 -10 10 h-20 a10 10 0 0 1 -10 -10 z' fill='%23a855f7'/><circle cx='40' cy='55' r='6' fill='%23ffffff'/><circle cx='60' cy='55' r='6' fill='%23ffffff'/><path d='M43 70 h14' stroke='%23ffffff' stroke-width='4' stroke-linecap='round'/><path d='M50 20 v20' stroke='%23ec4899' stroke-width='6' stroke-linecap='round'/><circle cx='50' cy='18' r='7' fill='%23ec4899'/></svg>">
+    
+    <!-- Tailwind CSS CDN -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script>
+        tailwind.config = {
+            darkMode: 'class',
+            theme: {
+                extend: {
+                    colors: {
+                        darkBg: '#090514',
+                        cardBg: '#130d24',
+                        cardBorder: '#2e1c52',
+                        neonPurple: '#a855f7',
+                        neonPink: '#ec4899',
+                        neonGlow: '#c084fc',
+                    }
+                }
+            }
+        }
+    </script>
+    <!-- FontAwesome for Icons -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <!-- Google Fonts Inter -->
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+    
+    <!-- EmailJS Kütüphanesi -->
+    <script type="text/javascript" src="https://cdn.jsdelivr.net/npm/@emailjs/browser@4/dist/email.min.js"></script>
+    <script type="text/javascript">
+        (function(){
+            emailjs.init({
+                publicKey: "-aiAkcjVISluyx02D",
+            });
+        })();
+    </script>
+
+    <style>
+        body {
+            font-family: 'Inter', sans-serif;
+            background-color: #090514;
+            color: #f3f4f6;
+            touch-action: manipulation;
+        }
+        .neon-glow {
+            box-shadow: 0 0 20px rgba(168, 85, 247, 0.35);
+        }
+        .neon-glow-pink {
+            box-shadow: 0 0 20px rgba(236, 72, 153, 0.35);
+        }
+        @keyframes customBlink {
+            0%, 100% { opacity: 1; border-color: rgba(168, 85, 247, 0.8); box-shadow: 0 0 15px rgba(168, 85, 247, 0.5); }
+            50% { opacity: 0.4; border-color: rgba(236, 72, 153, 0.4); box-shadow: 0 0 5px rgba(236, 72, 153, 0.2); }
+        }
+        .blinking-select {
+            animation: customBlink 1.5s infinite ease-in-out;
+        }
+        ::-webkit-scrollbar { width: 6px; }
+        ::-webkit-scrollbar-track { background: #090514; }
+        ::-webkit-scrollbar-thumb { background: #2e1c52; border-radius: 4px; }
+        input[type="number"], input[type="time"], select { font-size: 16px !important; }
+    </style>
+</head>
+<body class="min-h-screen bg-darkBg flex flex-col justify-between selection:bg-purple-500 selection:text-white pb-8">
+
+    <header class="w-full border-b border-cardBorder bg-cardBg/90 backdrop-blur-md sticky top-0 z-50 shadow-lg">
+        <div class="max-w-md mx-auto px-4 py-3 flex flex-col gap-3">
+            <div class="flex items-center justify-between">
+                <div class="flex items-center gap-2.5">
+                    <div class="w-9 h-9 rounded-xl bg-gradient-to-tr from-purple-600 to-pink-500 flex items-center justify-center neon-glow">
+                        <i class="fa-solid fa-robot text-white text-base"></i>
+                    </div>
+                    <div>
+                        <h1 class="text-base font-bold tracking-wide text-white leading-tight">CMESS-PLC TAKİP</h1>
+                        <p class="text-[10px] text-purple-300 font-medium">E-Posta & WhatsApp Raporlama</p>
+                    </div>
+                </div>
+                <div class="flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-purple-950/80 border border-purple-500/40 text-purple-300 text-xs font-semibold">
+                    <i class="fa-solid fa-share-nodes text-purple-400"></i>
+                    <span class="text-[11px]">Özgür Zengin</span>
+                </div>
+            </div>
+
+            <!-- Tab Switcher -->
+            <div class="flex bg-darkBg p-1 rounded-xl border border-cardBorder w-full">
+                <button id="tabStart" onclick="switchMode('start')" class="flex-1 py-2.5 rounded-lg text-xs font-bold transition-all duration-200 flex items-center justify-center gap-2 bg-purple-600 text-white neon-glow">
+                    <i class="fa-solid fa-play text-[10px]"></i> Vardiya Başı
+                </button>
+                <button id="tabEnd" onclick="switchMode('end')" class="flex-1 py-2.5 rounded-lg text-xs font-bold transition-all duration-200 flex items-center justify-center gap-2 text-purple-300 hover:text-white">
+                    <i class="fa-solid fa-flag-checkered text-[10px]"></i> Vardiya Sonu
+                </button>
+            </div>
+        </div>
+    </header>
+
+    <main class="flex-1 max-w-md w-full mx-auto px-4 py-4 space-y-4">
+        
+        <!-- Notification Banner -->
+        <div id="notificationBox" class="hidden p-3.5 rounded-xl border text-xs flex items-center gap-2.5 transition-all duration-300 shadow-lg">
+            <i id="notificationIcon" class="fa-solid text-base"></i>
+            <span id="notificationText" class="font-semibold"></span>
+        </div>
+
+        <!-- Cell Selection Dropdown Card -->
+        <div class="bg-cardBg border border-cardBorder rounded-2xl p-4 shadow-xl">
+            <label for="cellSelect" class="block text-xs font-bold text-purple-300 mb-2 uppercase tracking-wider flex items-center justify-between">
+                <span class="flex items-center gap-1.5"><i class="fa-solid fa-industry text-purple-400"></i> Hücre Seçimi</span>
+                <span id="partCountBadge" class="text-[10px] text-purple-400 font-normal lowercase bg-purple-950/80 px-2 py-0.5 rounded-md border border-purple-800">0 parça</span>
+            </label>
+            <div class="relative">
+                <select id="cellSelect" onchange="onCellChange(this.value)" class="w-full bg-darkBg border rounded-xl px-4 py-3.5 text-white font-bold text-sm appearance-none focus:outline-none focus:border-purple-500 transition-all blinking-select">
+                    <option value="" disabled selected>-- Hücre Seçiniz --</option>
+                    <option value="Hücre 4">Hücre 4</option>
+					<option value="Hücre 5">Hücre 5</option>
+					<option value="Hücre 21">Hücre 21</option>
+					<option value="Hücre 22">Hücre 22</option>				
+                    <option value="Hücre 41">Hücre 41</option>
+                    <option value="Hücre 43">Hücre 43</option>
+                    <option value="Hücre 45">Hücre 45</option>
+					<option value="Hücre 48">Hücre 48</option>
+					<option value="Hücre 52">Hücre 52</option>
+					<option value="Hücre 59s1">Hücre 59s1</option>
+                </select>
+                <div class="absolute right-4 top-1/2 -translate-y-1/2 text-purple-400 pointer-events-none">
+                    <i class="fa-solid fa-chevron-down text-xs"></i>
+                </div>
+            </div>
+        </div>
+
+        <!-- Time Picker Card -->
+        <div class="bg-cardBg border border-cardBorder rounded-2xl p-4 shadow-xl">
+            <label id="timeLabel" class="block text-xs font-bold text-purple-300 mb-2 uppercase tracking-wider flex items-center justify-between">
+                <span class="flex items-center gap-1.5"><i class="fa-solid fa-clock text-purple-400"></i> Robot Çalıştırma Saati</span>
+                <button type="button" onclick="setCurrentTime()" class="px-2.5 py-1 rounded-lg bg-purple-950/90 border border-purple-500/50 text-purple-200 text-xs font-bold hover:bg-purple-900 transition-all shadow-sm flex items-center gap-1.5">
+                    <i class="fa-solid fa-bolt text-[10px] text-purple-400"></i> Şimdi Al
+                </button>
+            </label>
+            <div class="relative w-full">
+                <input type="time" id="shiftTime" oninput="updatePreview()" class="w-full bg-darkBg border border-cardBorder rounded-xl px-4 py-3 text-white font-bold text-base focus:outline-none focus:border-purple-500 transition-all">
+                <div class="absolute right-4 top-1/2 -translate-y-1/2 text-purple-400 pointer-events-none">
+                    <i class="fa-regular fa-clock"></i>
+                </div>
+            </div>
+        </div>
+
+        <!-- Dynamic Parts Inputs -->
+        <div class="bg-cardBg border border-cardBorder rounded-2xl p-4 shadow-xl space-y-3">
+            <div class="flex items-center justify-between pb-3 border-b border-cardBorder">
+                <h2 id="sectionTitle" class="text-sm font-bold text-white flex items-center gap-2">
+                    <i class="fa-solid fa-boxes-stacked text-purple-400"></i> Parça Bilgileri
+                </h2>
+                <span id="selectedCellBadge" class="px-2.5 py-0.5 bg-purple-950 text-purple-300 border border-purple-800 rounded-full text-[11px] font-bold">
+                    Seçilmedi
+                </span>
+            </div>
+
+            <div id="partsContainer" class="space-y-3 text-center py-6 text-purple-400/70 text-xs">
+                Lütfen rapor için yukarıdan bir hücre seçiniz.
+            </div>
+        </div>
+
+        <!-- Photo Attachment Card (Geri Eklendi) -->
+        <div class="bg-cardBg border border-cardBorder rounded-2xl p-4 shadow-xl space-y-3">
+            <label class="block text-xs font-bold text-purple-300 uppercase tracking-wider flex items-center justify-between">
+                <span class="flex items-center gap-1.5"><i class="fa-solid fa-camera text-purple-400"></i> Fotoğraf Ekle (Opsiyonel)</span>
+                <span id="photoCountBadge" class="text-[10px] text-purple-400 font-normal bg-purple-950/80 px-2 py-0.5 rounded-md border border-purple-800">0 fotoğraf</span>
+            </label>
+            
+            <div class="flex items-center gap-2">
+                <label class="flex-1 bg-purple-600 hover:bg-purple-500 active:scale-95 text-white font-semibold py-2.5 px-3 rounded-xl cursor-pointer text-xs flex items-center justify-center gap-2 transition-all shadow-md">
+                    <i class="fa-solid fa-camera-retro text-sm"></i>
+                    <span>Kamera ile Çek</span>
+                    <input type="file" accept="image/*" capture="environment" onchange="handleImageUpload(event)" class="hidden">
+                </label>
+
+                <label class="flex-1 bg-cardBorder/80 hover:bg-cardBorder active:scale-95 text-purple-200 font-semibold py-2.5 px-3 rounded-xl cursor-pointer text-xs flex items-center justify-center gap-2 transition-all border border-purple-500/30">
+                    <i class="fa-regular fa-image text-sm"></i>
+                    <span>Galeriden Seç</span>
+                    <input type="file" accept="image/*" multiple onchange="handleImageUpload(event)" class="hidden">
+                </label>
+            </div>
+
+            <div id="photoPreviewContainer" class="hidden grid grid-cols-4 gap-2 pt-2"></div>
+        </div>
+
+        <!-- Live Message Preview Card -->
+        <div class="bg-cardBg border border-cardBorder rounded-2xl p-4 shadow-xl space-y-2">
+            <label class="block text-xs font-bold text-purple-300 uppercase tracking-wider flex items-center gap-1.5">
+                <i class="fa-regular fa-eye text-purple-400"></i> Canlı Rapor Önizlemesi
+            </label>
+            <div id="livePreview" class="bg-darkBg border border-cardBorder/80 rounded-xl p-3 font-mono text-[11px] text-purple-200/95 whitespace-pre-wrap leading-relaxed max-h-48 overflow-y-auto">
+                Lütfen hücre ve saat seçimi yapınız...
+            </div>
+        </div>
+
+        <!-- Action Buttons -->
+        <div class="space-y-2.5 pt-1">
+            <!-- Önce E-Posta Atıp Sonra WhatsApp'ı Çalıştıran Buton -->
+            <button onclick="sendEmailAndWhatsApp()" class="w-full bg-gradient-to-r from-purple-600 via-pink-600 to-emerald-600 active:scale-[0.98] text-white font-bold py-3.5 px-5 rounded-2xl shadow-lg shadow-purple-900/40 transition-all duration-200 flex items-center justify-center gap-3 text-base border border-purple-500/30">
+                <i class="fa-solid fa-paper-plane text-xl"></i>
+                <span>E-Posta Gönder & WhatsApp'a Aktar</span>
+            </button>
+            
+            <button onclick="copyToClipboard()" class="w-full bg-cardBg hover:bg-cardBorder/60 active:scale-[0.98] text-purple-300 font-semibold py-2.5 px-4 rounded-xl transition-all duration-200 flex items-center justify-center gap-2 text-xs border border-cardBorder">
+                <i class="fa-regular fa-copy"></i>
+                <span>Metin Olarak Kopyala</span>
+            </button>
+
+            <!-- Telefona Kısayol Oluştur Butonu -->
+            <button onclick="toggleShortcutGuide()" class="w-full bg-purple-950/60 hover:bg-purple-900/60 active:scale-[0.98] text-purple-200 font-semibold py-2.5 px-4 rounded-xl transition-all duration-200 flex items-center justify-center gap-2 text-xs border border-purple-500/30">
+                <i class="fa-solid fa-mobile-screen-button text-purple-400"></i>
+                <span>📱 Telefona Kısayol Oluştur</span>
+            </button>
+        </div>
+
+        <!-- Shortcut Guide Modal / Box (Initially Hidden) -->
+        <div id="shortcutGuideBox" class="hidden bg-cardBg border border-purple-500/40 rounded-2xl p-4 shadow-xl space-y-2.5 text-xs text-purple-200">
+            <div class="flex items-center justify-between pb-2 border-b border-cardBorder">
+                <span class="font-bold text-white flex items-center gap-1.5">
+                    <i class="fa-solid fa-circle-info text-purple-400"></i> Ana Ekrana Ekleme Rehberi
+                </span>
+                <button onclick="toggleShortcutGuide()" class="text-purple-400 hover:text-white px-1.5 py-0.5"><i class="fa-solid fa-xmark text-sm"></i></button>
+            </div>
+            <div class="space-y-2 text-[11px] leading-relaxed">
+                <p><b>🤖 Android (Chrome):</b> Sağ üst köşedeki üç noktaya (<i class="fa-solid fa-ellipsis-vertical"></i>) basın ve listeden <b>"Ana Ekrana Ekle"</b> veya <b>"Uygulama Yükle"</b> seçeneğini seçin.</p>
+                <p><b>🍏 iPhone (Safari):</b> Alt menüdeki Paylaş butonuna (<i class="fa-solid fa-arrow-up-from-bracket"></i>) basın, açılan menüden aşağı kaydırıp <b>"Ana Ekrana Ekle"</b> seçeneğine dokunun.</p>
+            </div>
+        </div>
+
+    </main>
+
+    <script>
+        const cellsData = {
+            "Hücre 5": ["772801500", "772801600", "772805100", "772805200", "772804300"],
+			"Hücre 4": ["772811401", "772810300", "772810400", "774505201", "774507201", "772804200"],
+            "Hücre 21": ["774502600","774502700","774504200","774504300","774504400","774504500","774502002","774504900"],
+            "Hücre 22": ["774502202", "774502301"],
+			"Hücre 41": ["774501902","774501100","774506200","774506300","774506800","774506900"],
+			"Hücre 43": ["774501201", "774501401","774507100"],
+			"Hücre 45": ["774501603", "774501703"],
+            "Hücre 48": ["774500501", "774500601" , "774503201" , "774503301"],
+			"Hücre 52": ["774505500", "774505600" , "774505700" , "774505800"],
+            "Hücre 59s1": ["774503002", "774503101"]
+        };
+
+        let currentMode = 'start';
+        let selectedCell = ''; 
+        let uploadedPhotos = [];
+
+        window.onload = function() {
+            setCurrentTime();
+            updatePreview();
+        };
+
+        function setCurrentTime() {
+            const now = new Date();
+            const hours = String(now.getHours()).padStart(2, '0');
+            const minutes = String(now.getMinutes()).padStart(2, '0');
+            document.getElementById('shiftTime').value = `${hours}:${minutes}`;
+            updatePreview();
+        }
+
+        function onCellChange(cellName) {
+            selectedCell = cellName;
+            const selectEl = document.getElementById('cellSelect');
+            if (cellName) {
+                selectEl.classList.remove('blinking-select');
+                selectEl.style.borderColor = '#2e1c52';
+            }
+            document.getElementById('selectedCellBadge').innerText = cellName;
+            renderPartInputs();
+            updatePreview();
+        }
+
+        function toggleShortcutGuide() {
+            const guideBox = document.getElementById('shortcutGuideBox');
+            guideBox.classList.toggle('hidden');
+        }
+
+        function switchMode(mode) {
+            currentMode = mode;
+            const tabStart = document.getElementById('tabStart');
+            const tabEnd = document.getElementById('tabEnd');
+            const timeLabel = document.getElementById('timeLabel');
+
+            if (mode === 'start') {
+                tabStart.className = "flex-1 py-2.5 rounded-lg text-xs font-bold transition-all duration-200 flex items-center justify-center gap-2 bg-purple-600 text-white neon-glow";
+                tabEnd.className = "flex-1 py-2.5 rounded-lg text-xs font-bold transition-all duration-200 flex items-center justify-center gap-2 text-purple-300 hover:text-white";
+                timeLabel.innerHTML = '<span class="flex items-center gap-1.5"><i class="fa-solid fa-clock text-purple-400"></i> Robot Çalıştırma Saati</span><button type="button" onclick="setCurrentTime()" class="px-2.5 py-1 rounded-lg bg-purple-950/90 border border-purple-500/50 text-purple-200 text-xs font-bold hover:bg-purple-900 transition-all shadow-sm flex items-center gap-1.5"><i class="fa-solid fa-bolt text-[10px] text-purple-400"></i> Şimdi Al</button>';
+            } else {
+                tabEnd.className = "flex-1 py-2.5 rounded-lg text-xs font-bold transition-all duration-200 flex items-center justify-center gap-2 bg-pink-600 text-white neon-glow-pink";
+                tabStart.className = "flex-1 py-2.5 rounded-lg text-xs font-bold transition-all duration-200 flex items-center justify-center gap-2 text-purple-300 hover:text-white";
+                timeLabel.innerHTML = '<span class="flex items-center gap-1.5"><i class="fa-solid fa-clock text-pink-400"></i> Robot Kapatma Saati</span><button type="button" onclick="setCurrentTime()" class="px-2.5 py-1 rounded-lg bg-pink-950/90 border border-pink-500/50 text-pink-200 text-xs font-bold hover:bg-pink-900 transition-all shadow-sm flex items-center gap-1.5"><i class="fa-solid fa-bolt text-[10px] text-pink-400"></i> Şimdi Al</button>';
+            }
+            if (selectedCell) renderPartInputs();
+            updatePreview();
+        }
+
+        function renderPartInputs() {
+            const container = document.getElementById('partsContainer');
+            const parts = cellsData[selectedCell] || [];
+            document.getElementById('partCountBadge').innerText = `${parts.length} parça`;
+            container.innerHTML = '';
+
+            if (!selectedCell) {
+                container.innerHTML = '<div class="text-center py-6 text-purple-400/70 text-xs">Lütfen rapor için yukarıdan bir hücre seçiniz.</div>';
+                return;
+            }
+
+            parts.forEach((partNo, index) => {
+                const row = document.createElement('div');
+                row.className = "bg-darkBg/80 border border-cardBorder rounded-xl p-2.5 flex flex-col gap-2 hover:border-purple-500/40 transition-all";
+                
+                if (currentMode === 'start') {
+                    row.innerHTML = `
+                        <div class="flex items-center justify-between gap-2">
+                            <div class="flex items-center gap-2 min-w-0">
+                                <span class="w-5 h-5 rounded bg-purple-950 border border-purple-800 text-purple-300 text-[10px] font-extrabold flex items-center justify-center flex-shrink-0">${index + 1}</span>
+                                <span class="font-mono text-xs font-bold text-white tracking-wider truncate">${partNo}</span>
+                            </div>
+                            <div class="flex items-center gap-1.5 flex-shrink-0">
+                                <label class="text-[10px] text-purple-300 font-medium whitespace-nowrap">Kasa İçi:</label>
+                                <input type="number" inputmode="numeric" pattern="[0-9]*" min="0" placeholder="0" data-part="${partNo}" data-type="kasa" oninput="updatePreview()" class="part-input w-20 bg-cardBg border border-cardBorder rounded-lg px-2 py-1 text-white font-bold text-center text-sm focus:outline-none focus:border-purple-500 transition-all">
+                            </div>
+                        </div>
+                    `;
+                } else {
+                    row.innerHTML = `
+                        <div class="flex items-center justify-between border-b border-cardBorder/50 pb-1.5">
+                            <div class="flex items-center gap-2">
+                                <span class="w-5 h-5 rounded bg-pink-950 border border-pink-800 text-pink-300 text-[10px] font-extrabold flex items-center justify-center">${index + 1}</span>
+                                <span class="font-mono text-xs font-bold text-white tracking-wider">${partNo}</span>
+                            </div>
+                        </div>
+                        <div class="grid grid-cols-2 gap-2">
+                            <div class="flex items-center justify-between bg-cardBg border border-cardBorder rounded-lg px-2 py-1">
+                                <label class="text-[10px] text-pink-300 font-medium">Üretilen</label>
+                                <input type="number" inputmode="numeric" pattern="[0-9]*" min="0" placeholder="0" data-part="${partNo}" data-type="uretilen" oninput="updatePreview()" class="part-input w-16 bg-darkBg border border-cardBorder rounded px-1.5 py-0.5 text-white font-bold text-center text-sm focus:outline-none focus:border-pink-500 transition-all">
+                            </div>
+                            <div class="flex items-center justify-between bg-cardBg border border-cardBorder rounded-lg px-2 py-1">
+                                <label class="text-[10px] text-purple-300 font-medium">Kalan Kasa</label>
+                                <input type="number" inputmode="numeric" pattern="[0-9]*" min="0" placeholder="0" data-part="${partNo}" data-type="kalan" oninput="updatePreview()" class="part-input w-16 bg-darkBg border border-cardBorder rounded px-1.5 py-0.5 text-white font-bold text-center text-sm focus:outline-none focus:border-purple-500 transition-all">
+                            </div>
+                        </div>
+                    `;
+                }
+                container.appendChild(row);
+            });
+        }
+
+        // Fotoğraf Yükleme Fonksiyonları
+        function handleImageUpload(event) {
+            const files = event.target.files;
+            if (!files || files.length === 0) return;
+
+            Array.from(files).forEach(file => {
+                const reader = new FileReader();
+                reader.onload = function(e) {
+                    uploadedPhotos.push({
+                        name: file.name || "Fotoğraf",
+                        data: e.target.result
+                    });
+                    updatePhotoPreviewUI();
+                    updatePreview();
+                };
+                reader.readAsDataURL(file);
+            });
+            event.target.value = '';
+        }
+
+        function removePhoto(index) {
+            uploadedPhotos.splice(index, 1);
+            updatePhotoPreviewUI();
+            updatePreview();
+        }
+
+        function updatePhotoPreviewUI() {
+            const container = document.getElementById('photoPreviewContainer');
+            const badge = document.getElementById('photoCountBadge');
+            
+            badge.innerText = `${uploadedPhotos.length} fotoğraf`;
+
+            if (uploadedPhotos.length === 0) {
+                container.classList.add('hidden');
+                container.innerHTML = '';
+                return;
+            }
+
+            container.classList.remove('hidden');
+            container.innerHTML = '';
+
+            uploadedPhotos.forEach((photo, index) => {
+                const thumb = document.createElement('div');
+                thumb.className = "relative group aspect-square rounded-lg overflow-hidden border border-purple-500/40 bg-darkBg";
+                thumb.innerHTML = `
+                    <img src="${photo.data}" class="w-full h-full object-cover">
+                    <button type="button" onclick="removePhoto(${index})" class="absolute top-1 right-1 w-5 h-5 bg-rose-600 text-white rounded-full flex items-center justify-center text-[10px] shadow hover:bg-rose-700 transition-all">
+                        <i class="fa-solid fa-xmark"></i>
+                    </button>
+                `;
+                container.appendChild(thumb);
+            });
+        }
+
+        function showNotification(message, type = 'success') {
+            const box = document.getElementById('notificationBox');
+            const text = document.getElementById('notificationText');
+            const icon = document.getElementById('notificationIcon');
+
+            text.innerText = message;
+            
+            if (type === 'success') {
+                box.className = "p-3.5 rounded-xl border text-xs flex items-center gap-2.5 transition-all duration-300 bg-emerald-950/90 border-emerald-500 text-emerald-200 shadow-emerald-900/50";
+                icon.className = "fa-solid fa-circle-check text-emerald-400 text-base";
+            } else {
+                box.className = "p-3.5 rounded-xl border text-xs flex items-center gap-2.5 transition-all duration-300 bg-rose-950/90 border-rose-500 text-rose-200 shadow-rose-900/50";
+                icon.className = "fa-solid fa-triangle-exclamation text-rose-400 text-base";
+            }
+
+            box.classList.remove('hidden');
+        }
+
+        function generateReportText() {
+            const shiftTime = document.getElementById('shiftTime').value;
+            if (!selectedCell || !shiftTime) return null;
+
+            const parts = cellsData[selectedCell] || [];
+            const inputs = document.querySelectorAll('#partsContainer input');
+            const dataMap = {};
+
+            inputs.forEach(input => {
+                const partNo = input.getAttribute('data-part');
+                const type = input.getAttribute('data-type');
+                if (!dataMap[partNo]) dataMap[partNo] = {};
+                dataMap[partNo][type] = input.value.trim() !== '' ? input.value : '0';
+            });
+
+            let message = "";
+            if (currentMode === 'start') {
+                message += `🚀 VARDİYA BAŞLANGIÇ RAPORU\n`;
+                message += `🏭 Hücre: ${selectedCell}\n`;
+				message += `✅ Rapor Tarihi: ${new Date().toLocaleDateString('tr-TR')}\n`;
+                message += `⏰ CMESS Çalıştırma Saati: ${shiftTime}\n`;
+                message += `----------------------------------\n`;
+                message += `📦 Kasa İçi Parça Adetleri:\n`;
+                parts.forEach(partNo => {
+                    if (dataMap[partNo]) message += `• ${partNo} ➔ ${dataMap[partNo].kasa} adet\n`;
+                });
+            } else {
+                message += `🏁 VARDİYA BİTİŞ RAPORU\n`;
+                message += `🏭 Hücre: ${selectedCell}\n`;
+				message += `✅ Rapor Tarihi: ${new Date().toLocaleDateString('tr-TR')}\n`;
+                message += `⏰ CMESS Kapatma Saati: ${shiftTime}\n`;
+                message += `----------------------------------\n`;
+                message += `📊 Üretim ve Kasa Durumları:\n`;
+                parts.forEach(partNo => {
+                    if (dataMap[partNo]) message += `• ${partNo} ➔ Üretilen: ${dataMap[partNo].uretilen} | Kalan: ${dataMap[partNo].kalan}\n`;
+                });
+            }
+
+            if (uploadedPhotos.length > 0) {
+                message += `----------------------------------\n`;
+                message += `📸 Eklenen Fotoğraf Sayısı: ${uploadedPhotos.length} adet\n`;
+            }
+
+            message += `----------------------------------\n`;
+            return message;
+        }
+
+        function updatePreview() {
+            const message = generateReportText();
+            const previewEl = document.getElementById('livePreview');
+            if (!selectedCell) {
+                previewEl.innerText = "Lütfen rapor oluşturmak için bir hücre seçiniz...";
+                return;
+            }
+            previewEl.innerText = message ? message : "Lütfen saat bilgisini giriniz...";
+        }
+
+        function copyToClipboard() {
+            if (!selectedCell) {
+                showNotification("Lütfen önce bir hücre seçiniz!", "error");
+                return;
+            }
+            const message = generateReportText();
+            if (!message) {
+                showNotification("Lütfen geçerli bir saat giriniz!", "error");
+                return;
+            }
+            const tempInput = document.createElement("textarea");
+            tempInput.value = message;
+            document.body.appendChild(tempInput);
+            tempInput.select();
+            document.execCommand("copy");
+            document.body.removeChild(tempInput);
+            showNotification("Rapor metni panoya kopyalandı!", "success");
+        }
+
+        // HİBRİT AKIŞ: Önce E-Posta Gönder, Başarılı Olunca WhatsApp İşlemine Devam Et
+        async function sendEmailAndWhatsApp() {
+            if (!selectedCell) {
+                showNotification("Lütfen önce bir hücre seçiniz!", "error");
+                return;
+            }
+            const shiftTime = document.getElementById('shiftTime').value;
+            const message = generateReportText();
+            if (!message || !shiftTime) {
+                showNotification("Lütfen geçerli bir saat giriniz!", "error");
+                return;
+            }
+
+            const currentDateStr = new Date().toLocaleDateString('tr-TR');
+            const modeText = currentMode === 'start' ? 'Vardiya Başlangıcı' : 'Vardiya Bitişi';
+            const dynamicSubject = `${currentDateStr} - ${shiftTime} - ${selectedCell} - ${modeText}`;
+
+            showNotification("E-posta gönderiliyor...", "success");
+
+            try {
+                const templateParams = {
+                    to_email: "ozgur_zengin@hotmail.com", 
+                    report_title: dynamicSubject,
+                    message_body: message
+                };
+
+                // 1. ADIM: EmailJS ile e-postayı gönder
+                const response = await emailjs.send('service_nar6lhb', 'template_0d6dg8g', templateParams);
+                
+                if (response.status === 200) {
+                    showNotification("✔ E-posta ozgur_zengin@hotmail.com adresine gönderildi. WhatsApp açılıyor...", "success");
+                } else {
+                    showNotification("⚠ E-posta gönderilemedi! (Kod: " + response.status + ") WhatsApp'a yönlendiriliyor...", "error");
+                }
+            } catch (error) {
+                console.error("EmailJS Hata:", error);
+                showNotification("❌ E-posta hatası! WhatsApp'a yönlendiriliyor...", "error");
+            }
+
+            // 2. ADIM: E-posta işleminden sonra kesintisiz olarak WhatsApp akışını başlat
+            setTimeout(async () => {
+                const filesToShare = [];
+                for (let i = 0; i < uploadedPhotos.length; i++) {
+                    const photo = uploadedPhotos[i];
+                    try {
+                        const res = await fetch(photo.data);
+                        const blob = await res.blob();
+                        filesToShare.push(new File([blob], `rapor_fotograf_${i + 1}.jpg`, { type: 'image/jpeg' }));
+                    } catch (err) {
+                        console.error("Fotoğraf dönüştürme hatası:", err);
+                    }
+                }
+
+                // Mobil cihazlarda Web Share API ile fotoğraflı paylaşım
+                if (navigator.share && filesToShare.length > 0 && navigator.canShare && navigator.canShare({ files: filesToShare })) {
+                    try {
+                        await navigator.share({
+                            title: 'CMESS-PLC Vardiya Raporu',
+                            text: message,
+                            files: filesToShare
+                        });
+                        return;
+                    } catch (err) {
+                        if (err.name === 'AbortError') return;
+                    }
+                }
+
+                // Standart WhatsApp yönlendirmesi
+                const encodedMessage = encodeURIComponent(message);
+                const whatsappUrl = `https://api.whatsapp.com/send?text=${encodedMessage}`;
+                window.open(whatsappUrl, '_blank');
+            }, 1000);
+        }
+    </script>
+</body>
+</html>
