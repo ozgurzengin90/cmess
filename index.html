@@ -126,16 +126,15 @@
                 <select id="cellSelect" onchange="onCellChange(this.value)" class="w-full bg-darkBg border rounded-xl px-4 py-3.5 text-white font-bold text-sm appearance-none focus:outline-none focus:border-purple-500 focus:ring-2 focus:ring-purple-500/20 transition-all blinking-select">
                     <option value="" disabled selected>-- Hücre Seçiniz --</option>
                     <option value="Hücre 4">Hücre 4</option>
-					<option value="Hücre 5">Hücre 5</option>
-					<option value="Hücre 21">Hücre 21</option>
-					<option value="Hücre 22">Hücre 22</option>				
+                    <option value="Hücre 5">Hücre 5</option>
+                    <option value="Hücre 21">Hücre 21</option>
+                    <option value="Hücre 22">Hücre 22</option>				
                     <option value="Hücre 41">Hücre 41</option>
                     <option value="Hücre 43">Hücre 43</option>
                     <option value="Hücre 45">Hücre 45</option>
-					<option value="Hücre 48">Hücre 48</option>
-					<option value="Hücre 52">Hücre 52</option>
-					<option value="Hücre 59s1">Hücre 59s1</option>
-                    
+                    <option value="Hücre 48">Hücre 48</option>
+                    <option value="Hücre 52">Hücre 52</option>
+                    <option value="Hücre 59s1">Hücre 59s1</option>
                 </select>
                 <div class="absolute right-4 top-1/2 -translate-y-1/2 text-purple-400 pointer-events-none">
                     <i class="fa-solid fa-chevron-down text-xs"></i>
@@ -199,6 +198,25 @@
             <div id="photoPreviewContainer" class="hidden grid grid-cols-4 gap-2 pt-2"></div>
         </div>
 
+        <!-- Push Notifications & Reminders Card (YENİ) -->
+        <div class="bg-cardBg border border-cardBorder rounded-2xl p-4 shadow-xl space-y-3">
+            <label class="block text-xs font-bold text-purple-300 uppercase tracking-wider flex items-center justify-between">
+                <span class="flex items-center gap-1.5"><i class="fa-solid fa-bell text-purple-400"></i> Telefon Bildirimleri</span>
+                <span id="notifStatusBadge" class="text-[10px] text-amber-400 bg-amber-950/80 px-2 py-0.5 rounded-md border border-amber-800">İzin Bekliyor</span>
+            </label>
+            <div class="flex gap-2">
+                <button type="button" onclick="requestPushPermission()" class="flex-1 bg-purple-950/80 hover:bg-purple-900 border border-purple-500/40 text-purple-200 font-semibold py-2.5 px-3 rounded-xl text-xs flex items-center justify-center gap-2 transition-all active:scale-95">
+                    <i class="fa-solid fa-bell-concierge"></i> Bildirim İzni Ver
+                </button>
+                <button type="button" onclick="testPushNotification()" class="bg-cardBorder/80 hover:bg-cardBorder border border-purple-500/30 text-purple-200 font-semibold py-2.5 px-4 rounded-xl text-xs flex items-center justify-center gap-2 transition-all active:scale-95">
+                    <i class="fa-solid fa-paper-plane text-purple-400"></i> Test Et
+                </button>
+            </div>
+            <p class="text-[10px] text-purple-300/80 leading-relaxed">
+                💡 Telefonunuzda kilit ekranı uyarısı alabilmek için "Bildirim İzni Ver" butonuna dokunup izin verin.
+            </p>
+        </div>
+
         <!-- Live Message Preview Card -->
         <div class="bg-cardBg border border-cardBorder rounded-2xl p-4 shadow-xl space-y-2">
             <label class="block text-xs font-bold text-purple-300 uppercase tracking-wider flex items-center gap-1.5">
@@ -247,14 +265,14 @@
     <script>
         const cellsData = {
             "Hücre 5": ["772801500", "772801600", "772805100", "772805200", "772804300"],
-			"Hücre 4": ["772811401", "772810300", "772810400", "774505201", "774507201", "772804200"],
+            "Hücre 4": ["772811401", "772810300", "772810400", "774505201", "774507201", "772804200"],
             "Hücre 21": ["774502600","774502700","774504200","774504300","774504400","774504500","774502002","774504900"],
             "Hücre 22": ["774502202", "774502301"],
-			"Hücre 41": ["774501902","774501100","774506200","774506300","774506800","774506900"],
-			 "Hücre 43": ["774501201", "774501401","774507100"],
-			"Hücre 45": ["774501603", "774501703"],
+            "Hücre 41": ["774501902","774501100","774506200","774506300","774506800","774506900"],
+            "Hücre 43": ["774501201", "774501401","774507100"],
+            "Hücre 45": ["774501603", "774501703"],
             "Hücre 48": ["774500501", "774500601" , "774503201" , "774503301"],
-			"Hücre 52": ["774505500", "774505600" , "774505700" , "774505800"],
+            "Hücre 52": ["774505500", "774505600" , "774505700" , "774505800"],
             "Hücre 59s1": ["774503002", "774503101"]
         };
 
@@ -265,7 +283,80 @@
         window.onload = function() {
             setCurrentTime();
             updatePreview();
+            checkNotificationPermissionUI();
         };
+
+        // --- BİLDİRİM YÖNETİMİ ---
+        function checkNotificationPermissionUI() {
+            const badge = document.getElementById('notifStatusBadge');
+            if (!('Notification' in window)) {
+                badge.innerText = "Desteklenmiyor";
+                badge.className = "text-[10px] text-rose-400 bg-rose-950/80 px-2 py-0.5 rounded-md border border-rose-800";
+                return;
+            }
+
+            if (Notification.permission === 'granted') {
+                badge.innerText = "Aktif (İzin Verildi)";
+                badge.className = "text-[10px] text-emerald-400 bg-emerald-950/80 px-2 py-0.5 rounded-md border border-emerald-800";
+            } else if (Notification.permission === 'denied') {
+                badge.innerText = "İzin Reddedildi";
+                badge.className = "text-[10px] text-rose-400 bg-rose-950/80 px-2 py-0.5 rounded-md border border-rose-800";
+            } else {
+                badge.innerText = "İzin Bekliyor";
+                badge.className = "text-[10px] text-amber-400 bg-amber-950/80 px-2 py-0.5 rounded-md border border-amber-800";
+            }
+        }
+
+        async function requestPushPermission() {
+            if (!('Notification' in window)) {
+                showNotification("Tarayıcınız bildirimleri desteklemiyor.", "error");
+                return;
+            }
+
+            const permission = await Notification.requestPermission();
+            checkNotificationPermissionUI();
+
+            if (permission === 'granted') {
+                showNotification("Bildirim izni başarıyla verildi!", "success");
+                triggerSystemNotification("CMESS Takip", "Bildirimler aktif! Raporlar ve hatırlatıcılar artık telefonda görünecek.");
+            } else {
+                showNotification("Bildirim izni reddedildi.", "error");
+            }
+        }
+
+        function triggerSystemNotification(title, body) {
+            if ('Notification' in window && Notification.permission === 'granted') {
+                try {
+                    // PWA veya tarayıcı üzerinden sistem bildirimi
+                    if (navigator.serviceWorker && navigator.serviceWorker.controller) {
+                        navigator.serviceWorker.ready.then(registration => {
+                            registration.showNotification(title, {
+                                body: body,
+                                icon: 'data:image/svg+xml,<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100"><rect width="100" height="100" rx="25" fill="%23130d24"/><path d="M30 40 h40 v35 a10 10 0 0 1 -10 10 h-20 a10 10 0 0 1 -10 -10 z" fill="%23a855f7"/></svg>',
+                                badge: 'data:image/svg+xml,<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100"><circle cx="50" cy="50" r="40" fill="%23a855f7"/></svg>'
+                            });
+                        });
+                    } else {
+                        new Notification(title, {
+                            body: body,
+                            icon: 'data:image/svg+xml,<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100"><rect width="100" height="100" rx="25" fill="%23130d24"/><path d="M30 40 h40 v35 a10 10 0 0 1 -10 10 h-20 a10 10 0 0 1 -10 -10 z" fill="%23a855f7"/></svg>'
+                        });
+                    }
+                } catch (e) {
+                    console.error("Bildirim gönderilemedi:", e);
+                }
+            }
+        }
+
+        function testPushNotification() {
+            if (Notification.permission === 'granted') {
+                triggerSystemNotification("Test Bildirimi 🚀", "CMESS PLC Raporlama sisteminden kilit ekranı testi başarılı!");
+                showNotification("Test bildirimi gönderildi!", "success");
+            } else {
+                requestPushPermission();
+            }
+        }
+        // ------------------------------------
 
         function setCurrentTime() {
             const now = new Date();
@@ -466,7 +557,7 @@
             if (currentMode === 'start') {
                 message += `🚀 VARDİYA BAŞLANGIÇ RAPORU\n`;
                 message += `🏭 Hücre: ${selectedCell}\n`;
-				message += `✅ Rapor Tarihi: ${new Date().toLocaleDateString('tr-TR')}\n`;
+                message += `✅ Rapor Tarihi: ${new Date().toLocaleDateString('tr-TR')}\n`;
                 message += `⏰ CMESS Çalıştırma Saati: ${shiftTime}\n`;
                 message += `----------------------------------\n`;
                 message += `📦 Kasa İçi Parça Adetleri:\n`;
@@ -479,7 +570,7 @@
             } else {
                 message += `🏁 VARDİYA BİTİŞ RAPORU\n`;
                 message += `🏭 Hücre: ${selectedCell}\n`;
-				message += `✅ Rapor Tarihi: ${new Date().toLocaleDateString('tr-TR')}\n`;
+                message += `✅ Rapor Tarihi: ${new Date().toLocaleDateString('tr-TR')}\n`;
                 message += `⏰ CMESS Kapatma Saati: ${shiftTime}\n`;
                 message += `----------------------------------\n`;
                 message += `📊 Üretim ve Kasa Durumları:\n`;
@@ -493,12 +584,10 @@
 
             if (uploadedPhotos.length > 0) {
                 message += `----------------------------------\n`;
-                message += `📸Eklenen Fotoğraf Sayısı: ${uploadedPhotos.length} adet\n`;
+                message += `📸 Eklenen Fotoğraf Sayısı: ${uploadedPhotos.length} adet\n`;
             }
 
             message += `----------------------------------\n`;
-            
-
             return message;
         }
 
@@ -535,9 +624,9 @@
             document.body.removeChild(tempInput);
 
             showNotification("Rapor metni panoya kopyalandı!", "success");
+            triggerSystemNotification("Kopyalandı! 📋", `${selectedCell} raporu panoya kopyalandı.`);
         }
 
-        // Web Share API Destekli Gönderim Fonksiyonu
         async function sendToWhatsApp() {
             if (!selectedCell) {
                 showNotification("Lütfen önce bir hücre seçiniz!", "error");
@@ -549,7 +638,6 @@
                 return;
             }
 
-            // Fotoğrafları File nesnelerine dönüştür
             const filesToShare = [];
             for (let i = 0; i < uploadedPhotos.length; i++) {
                 const photo = uploadedPhotos[i];
@@ -562,7 +650,6 @@
                 }
             }
 
-            // Web Share API kontrolü (Mobil cihazlar için)
             if (navigator.share && filesToShare.length > 0 && navigator.canShare && navigator.canShare({ files: filesToShare })) {
                 try {
                     await navigator.share({
@@ -571,13 +658,13 @@
                         files: filesToShare
                     });
                     showNotification("Rapor ve fotoğraflar paylaşıldı!", "success");
+                    triggerSystemNotification("Paylaşıldı 🚀", `${selectedCell} raporu başarıyla gönderildi.`);
                     return;
                 } catch (err) {
-                    if (err.name === 'AbortError') return; // Kullanıcı iptal ettiyse sessiz kal
+                    if (err.name === 'AbortError') return;
                 }
             }
 
-            // Eğer Web Share API desteklenmiyorsa veya fotoğraf yoksa standart WhatsApp yönlendirmesi
             const encodedMessage = encodeURIComponent(message);
             const whatsappUrl = `https://api.whatsapp.com/send?text=${encodedMessage}`;
             
@@ -586,6 +673,8 @@
             } else {
                 showNotification("WhatsApp açılıyor...", "success");
             }
+
+            triggerSystemNotification("WhatsApp Raporu 📱", `${selectedCell} raporu WhatsApp'a aktarılıyor.`);
 
             setTimeout(() => {
                 window.open(whatsappUrl, '_blank');
