@@ -215,10 +215,16 @@
 
         <!-- Action Buttons -->
         <div class="space-y-2.5 pt-1">
-            <!-- E-Posta Gönder & WhatsApp'a Aktar Butonu -->
-            <button onclick="sendEmailAndWhatsApp()" class="w-full bg-gradient-to-r from-purple-600 via-pink-600 to-emerald-600 active:scale-[0.98] text-white font-bold py-3.5 px-5 rounded-2xl shadow-lg shadow-purple-900/40 transition-all duration-200 flex items-center justify-center gap-3 text-base border border-purple-500/30">
-                <i class="fa-solid fa-paper-plane text-xl"></i>
-                <span>E-Posta Gönder & WhatsApp'a Aktar</span>
+            <!-- 1. Adım Butonu: E-Posta Gönder -->
+            <button onclick="sendEmailOnly()" class="w-full bg-gradient-to-r from-purple-600 to-pink-600 active:scale-[0.98] text-white font-bold py-3.5 px-5 rounded-2xl shadow-lg shadow-purple-900/40 transition-all duration-200 flex items-center justify-center gap-3 text-base border border-purple-500/30">
+                <i class="fa-solid fa-envelope text-xl"></i>
+                <span>1. Adım: E-Posta Gönder</span>
+            </button>
+
+            <!-- 2. Adım Butonu: WhatsApp ile Gönder (Başta Pasif/Gizli veya Gri görünür) -->
+            <button id="whatsappBtn" onclick="sendToWhatsApp()" class="w-full bg-gradient-to-r from-emerald-600 to-teal-600 active:scale-[0.98] text-white font-bold py-3.5 px-5 rounded-2xl shadow-lg shadow-emerald-900/40 transition-all duration-200 flex items-center justify-center gap-3 text-base border border-emerald-500/30 opacity-50 cursor-not-allowed" disabled>
+                <i class="fa-brands fa-whatsapp text-2xl"></i>
+                <span>2. Adım: WhatsApp ile Gönder</span>
             </button>
             
             <button onclick="copyToClipboard()" class="w-full bg-cardBg hover:bg-cardBorder/60 active:scale-[0.98] text-purple-300 font-semibold py-2.5 px-4 rounded-xl transition-all duration-200 flex items-center justify-center gap-2 text-xs border border-cardBorder">
@@ -437,9 +443,6 @@
             }
 
             box.classList.remove('hidden');
-            setTimeout(() => {
-                box.classList.add('hidden');
-            }, 3500);
         }
 
         function generateReportText(photoLinks = "") {
@@ -518,8 +521,8 @@
             showNotification("Rapor metni panoya kopyalandı!", "success");
         }
 
-        // HİBRİT SİSTEM: E-Posta Gönder + WhatsApp'a Doğrudan Dosya Aktar
-        async function sendEmailAndWhatsApp() {
+        // 1. ADIM: Sadece E-Posta Gönderme İşlemi
+        async function sendEmailOnly() {
             if (!selectedCell) {
                 showNotification("Lütfen önce bir hücre seçiniz!", "error");
                 return;
@@ -530,11 +533,10 @@
                 return;
             }
 
-            showNotification("İşlem başlatıldı: E-posta hazırlanıyor...", "success");
+            showNotification("Fotoğraflar yükleniyor ve e-posta gönderiliyor...", "success");
 
             let photoLinksText = "";
 
-            // 1. ADIM: Varsa fotoğrafları e-posta için ImgBB'ye yükle
             if (uploadedPhotos.length > 0) {
                 const imgbbApiKey = "2a28102fa3199d44d2a11fd1e71ae2f0"; 
                 const linkArray = [];
@@ -562,7 +564,6 @@
 
             const finalMessage = generateReportText(photoLinksText);
 
-            // Mail Konusu: Tarih | Saat | Hücre No | Vardiya Başlangıcı/Bitişi
             const currentDateStr = new Date().toLocaleDateString('tr-TR');
             const modeText = currentMode === 'start' ? 'Vardiya Başlangıcı' : 'Vardiya Bitişi';
             const dynamicSubject = `${currentDateStr} - ${shiftTime} - ${selectedCell} - ${modeText}`;
@@ -574,52 +575,57 @@
                     message_body: finalMessage
                 };
 
-                // 2. ADIM: EmailJS ile ozgur_zengin@hotmail.com adresine gönder
                 const response = await emailjs.send('service_nar6lhb', 'template_0d6dg8g', templateParams);
                 
                 if (response.status === 200) {
-                    showNotification("✔ E-posta gönderildi! WhatsApp açılıyor...", "success");
+                    showNotification("✔ E-posta başarıyla gönderildi! Şimdi 2. Adım (WhatsApp) aktif.", "success");
+                    
+                    // WhatsApp butonunu aktif et
+                    const whatsappBtn = document.getElementById('whatsappBtn');
+                    whatsappBtn.classList.remove('opacity-50', 'cursor-not-allowed');
+                    whatsappBtn.removeAttribute('disabled');
                 } else {
-                    showNotification("⚠ E-posta iletilemedi, WhatsApp açılıyor...", "error");
+                    showNotification("⚠ E-posta gönderilemedi!", "error");
                 }
             } catch (error) {
                 console.error("EmailJS Hata:", error);
-                showNotification("❌ E-posta hatası! WhatsApp'a yönlendiriliyor...", "error");
+                showNotification("❌ E-posta gönderilirken hata oluştu!", "error");
+            }
+        }
+
+        // 2. ADIM: Kullanıcı Tıkladığında WhatsApp Paylaşımını Başlat
+        async function sendToWhatsApp() {
+            if (!selectedCell) return;
+            const message = generateReportText();
+
+            const filesToShare = [];
+            for (let i = 0; i < uploadedPhotos.length; i++) {
+                const photo = uploadedPhotos[i];
+                try {
+                    const res = await fetch(photo.data);
+                    const blob = await res.blob();
+                    filesToShare.push(new File([blob], `rapor_fotograf_${i + 1}.jpg`, { type: 'image/jpeg' }));
+                } catch (err) {
+                    console.error("Fotoğraf dönüştürme hatası:", err);
+                }
             }
 
-            // 3. ADIM: WhatsApp'ı ve telefon paylaşım menüsünü tetikle
-            setTimeout(async () => {
-                const filesToShare = [];
-                for (let i = 0; i < uploadedPhotos.length; i++) {
-                    const photo = uploadedPhotos[i];
-                    try {
-                        const res = await fetch(photo.data);
-                        const blob = await res.blob();
-                        filesToShare.push(new File([blob], `rapor_fotograf_${i + 1}.jpg`, { type: 'image/jpeg' }));
-                    } catch (err) {
-                        console.error("Fotoğraf dönüştürme hatası:", err);
-                    }
+            if (navigator.share && filesToShare.length > 0 && navigator.canShare && navigator.canShare({ files: filesToShare })) {
+                try {
+                    await navigator.share({
+                        title: 'CMESS-PLC Vardiya Raporu',
+                        text: message,
+                        files: filesToShare
+                    });
+                    return;
+                } catch (err) {
+                    if (err.name === 'AbortError') return;
                 }
+            }
 
-                // Mobil cihazlarda fotoğrafları ve metni doğrudan paylaş
-                if (navigator.share && filesToShare.length > 0 && navigator.canShare && navigator.canShare({ files: filesToShare })) {
-                    try {
-                        await navigator.share({
-                            title: 'CMESS-PLC Vardiya Raporu',
-                            text: finalMessage,
-                            files: filesToShare
-                        });
-                        return;
-                    } catch (err) {
-                        if (err.name === 'AbortError') return;
-                    }
-                }
-
-                // Desteklenmeyen cihazlarda standart metin aktarımı
-                const encodedMessage = encodeURIComponent(finalMessage);
-                const whatsappUrl = `https://api.whatsapp.com/send?text=${encodedMessage}`;
-                window.open(whatsappUrl, '_blank');
-            }, 1000);
+            const encodedMessage = encodeURIComponent(message);
+            const whatsappUrl = `https://api.whatsapp.com/send?text=${encodedMessage}`;
+            window.open(whatsappUrl, '_blank');
         }
     </script>
 </body>
