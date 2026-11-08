@@ -501,7 +501,7 @@
             showNotification("Rapor metni panoya kopyalandı!", "success");
         }
 
-        // HİBRİT AKIŞ: ImgBB'ye Yükleme + EmailJS + WhatsApp
+        // HİBRİT AKIŞ: ImgBB'ye Yükleme (Mail için) + EmailJS + WhatsApp (Direkt Fotoğraf Dosyasıyla)
         async function sendEmailAndWhatsApp() {
             if (!selectedCell) {
                 showNotification("Lütfen önce bir hücre seçiniz!", "error");
@@ -513,11 +513,11 @@
                 return;
             }
 
-            showNotification("Fotoğraflar yükleniyor ve e-posta gönderiliyor...", "success");
+            showNotification("Fotoğraflar işleniyor ve e-posta gönderiliyor...", "success");
 
             let photoLinksText = "";
 
-            // 1. ADIM: Fotoğraflar varsa ImgBB'ye yükle
+            // 1. ADIM: Mail için ImgBB'ye yükleme
             if (uploadedPhotos.length > 0) {
                 const imgbbApiKey = "2a28102fa3199d44d2a11fd1e71ae2f0"; 
                 const linkArray = [];
@@ -545,14 +545,14 @@
 
             const finalMessage = generateReportText(photoLinksText);
 
-            // Mail Konusu: Tarih | Saat | Hücre No | Vardiya Başlangıcı/Bitişi
+            // Mail Konusu
             const currentDateStr = new Date().toLocaleDateString('tr-TR');
             const modeText = currentMode === 'start' ? 'Vardiya Başlangıcı' : 'Vardiya Bitişi';
             const dynamicSubject = `${currentDateStr} - ${shiftTime} - ${selectedCell} - ${modeText}`;
 
             try {
                 const templateParams = {
-                    to_email: "cmf1_mnt_tl8@coskunoz.com.tr", 
+                    to_email: "ozgur_zengin@hotmail.com", 
                     report_title: dynamicSubject,
                     message_body: finalMessage
                 };
@@ -561,7 +561,7 @@
                 const response = await emailjs.send('service_nar6lhb', 'template_0d6dg8g', templateParams);
                 
                 if (response.status === 200) {
-                    showNotification("✔ E-posta fotoğraf linkleriyle birlikte gönderildi! WhatsApp açılıyor...", "success");
+                    showNotification("✔ E-posta gönderildi! WhatsApp paylaşım ekranı açılıyor...", "success");
                 } else {
                     showNotification("⚠ E-posta gönderilemedi! WhatsApp'a yönlendiriliyor...", "error");
                 }
@@ -570,7 +570,7 @@
                 showNotification("❌ E-posta hatası! WhatsApp'a yönlendiriliyor...", "error");
             }
 
-            // 3. ADIM: E-posta işleminden sonra WhatsApp akışını başlat
+            // 3. ADIM: WhatsApp'a Doğrudan Dosya Olarak Aktarım (Web Share API)
             setTimeout(async () => {
                 const filesToShare = [];
                 for (let i = 0; i < uploadedPhotos.length; i++) {
@@ -584,6 +584,7 @@
                     }
                 }
 
+                // Mobil cihazlarda direkt fotoğraf dosyasıyla WhatsApp'ı tetikle
                 if (navigator.share && filesToShare.length > 0 && navigator.canShare && navigator.canShare({ files: filesToShare })) {
                     try {
                         await navigator.share({
@@ -597,6 +598,7 @@
                     }
                 }
 
+                // Eğer cihaz desteklemiyorsa metin ve linklerle yedek yönlendirme
                 const encodedMessage = encodeURIComponent(finalMessage);
                 const whatsappUrl = `https://api.whatsapp.com/send?text=${encodedMessage}`;
                 window.open(whatsappUrl, '_blank');
