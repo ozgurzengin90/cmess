@@ -7,7 +7,8 @@
     
     <!-- Dynamic SVG Favicon -->
     <link rel="icon" type="image/svg+xml" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><rect width='100' height='100' rx='25' fill='%23130d24'/><path d='M30 40 h40 v35 a10 10 0 0 1 -10 10 h-20 a10 10 0 0 1 -10 -10 z' fill='%23a855f7'/><circle cx='40' cy='55' r='6' fill='%23ffffff'/><circle cx='60' cy='55' r='6' fill='%23ffffff'/><path d='M43 70 h14' stroke='%23ffffff' stroke-width='4' stroke-linecap='round'/><path d='M50 20 v20' stroke='%23ec4899' stroke-width='6' stroke-linecap='round'/><circle cx='50' cy='18' r='7' fill='%23ec4899'/></svg>">
-    
+    <link rel="apple-touch-icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><rect width='100' height='100' rx='25' fill='%23130d24'/><path d='M30 40 h40 v35 a10 10 0 0 1 -10 10 h-20 a10 10 0 0 1 -10 -10 z' fill='%23a855f7'/><circle cx='40' cy='55' r='6' fill='%23ffffff'/><circle cx='60' cy='55' r='6' fill='%23ffffff'/><path d='M43 70 h14' stroke='%23ffffff' stroke-width='4' stroke-linecap='round'/><path d='M50 20 v20' stroke='%23ec4899' stroke-width='6' stroke-linecap='round'/><circle cx='50' cy='18' r='7' fill='%23ec4899'/></svg>">
+
     <!-- Tailwind CSS CDN -->
     <script src="https://cdn.tailwindcss.com"></script>
     <script>
@@ -55,6 +56,9 @@
         .neon-glow-pink {
             box-shadow: 0 0 20px rgba(236, 72, 153, 0.35);
         }
+        .neon-text {
+            text-shadow: 0 0 10px rgba(192, 132, 252, 0.5);
+        }
         @keyframes customBlink {
             0%, 100% { opacity: 1; border-color: rgba(168, 85, 247, 0.8); box-shadow: 0 0 15px rgba(168, 85, 247, 0.5); }
             50% { opacity: 0.4; border-color: rgba(236, 72, 153, 0.4); box-shadow: 0 0 5px rgba(236, 72, 153, 0.2); }
@@ -62,10 +66,19 @@
         .blinking-select {
             animation: customBlink 1.5s infinite ease-in-out;
         }
-        ::-webkit-scrollbar { width: 6px; }
-        ::-webkit-scrollbar-track { background: #090514; }
-        ::-webkit-scrollbar-thumb { background: #2e1c52; border-radius: 4px; }
-        input[type="number"], input[type="time"], select { font-size: 16px !important; }
+        ::-webkit-scrollbar {
+            width: 6px;
+        }
+        ::-webkit-scrollbar-track {
+            background: #090514;
+        }
+        ::-webkit-scrollbar-thumb {
+            background: #2e1c52;
+            border-radius: 4px;
+        }
+        input[type="number"], input[type="time"], select {
+            font-size: 16px !important;
+        }
     </style>
 </head>
 <body class="min-h-screen bg-darkBg flex flex-col justify-between selection:bg-purple-500 selection:text-white pb-8">
@@ -78,7 +91,7 @@
                         <i class="fa-solid fa-robot text-white text-base"></i>
                     </div>
                     <div>
-                        <h1 class="text-base font-bold tracking-wide text-white leading-tight">CMESS-PLC TAKİP</h1>
+                        <h1 class="text-base font-bold tracking-wide neon-text text-white leading-tight">CMESS-PLC TAKİP</h1>
                         <p class="text-[10px] text-purple-300 font-medium">E-Posta & WhatsApp Raporlama</p>
                     </div>
                 </div>
@@ -138,7 +151,7 @@
         <div class="bg-cardBg border border-cardBorder rounded-2xl p-4 shadow-xl">
             <label id="timeLabel" class="block text-xs font-bold text-purple-300 mb-2 uppercase tracking-wider flex items-center justify-between">
                 <span class="flex items-center gap-1.5"><i class="fa-solid fa-clock text-purple-400"></i> Robot Çalıştırma Saati</span>
-                <button type="button" onclick="setCurrentTime()" class="px-2.5 py-1 rounded-lg bg-purple-950/90 border border-purple-500/50 text-purple-200 text-xs font-bold hover:bg-purple-900 transition-all shadow-sm flex items-center gap-1.5">
+                <button type="button" onclick="setCurrentTime()" class="px-2.5 py-1 rounded-lg bg-purple-950/90 border border-purple-500/50 text-purple-200 text-xs font-bold hover:bg-purple-900 active:scale-95 transition-all shadow-sm flex items-center gap-1.5">
                     <i class="fa-solid fa-bolt text-[10px] text-purple-400"></i> Şimdi Al
                 </button>
             </label>
@@ -202,6 +215,7 @@
 
         <!-- Action Buttons -->
         <div class="space-y-2.5 pt-1">
+            <!-- E-Posta Gönder & WhatsApp'a Aktar Butonu -->
             <button onclick="sendEmailAndWhatsApp()" class="w-full bg-gradient-to-r from-purple-600 via-pink-600 to-emerald-600 active:scale-[0.98] text-white font-bold py-3.5 px-5 rounded-2xl shadow-lg shadow-purple-900/40 transition-all duration-200 flex items-center justify-center gap-3 text-base border border-purple-500/30">
                 <i class="fa-solid fa-paper-plane text-xl"></i>
                 <span>E-Posta Gönder & WhatsApp'a Aktar</span>
@@ -423,6 +437,9 @@
             }
 
             box.classList.remove('hidden');
+            setTimeout(() => {
+                box.classList.add('hidden');
+            }, 3500);
         }
 
         function generateReportText(photoLinks = "") {
@@ -465,7 +482,7 @@
 
             if (photoLinks) {
                 message += `----------------------------------\n`;
-                message += `📸 Rapor Fotoğrafları:\n${photoLinks}\n`;
+                message += `📸 Rapor Fotoğrafları (ImgBB):\n${photoLinks}\n`;
             }
 
             message += `----------------------------------\n`;
@@ -501,7 +518,7 @@
             showNotification("Rapor metni panoya kopyalandı!", "success");
         }
 
-        // HİBRİT AKIŞ: ImgBB'ye Yükleme (Mail için) + EmailJS + WhatsApp (Direkt Fotoğraf Dosyasıyla)
+        // HİBRİT SİSTEM: E-Posta Gönder + WhatsApp'a Doğrudan Dosya Aktar
         async function sendEmailAndWhatsApp() {
             if (!selectedCell) {
                 showNotification("Lütfen önce bir hücre seçiniz!", "error");
@@ -513,11 +530,11 @@
                 return;
             }
 
-            showNotification("Fotoğraflar işleniyor ve e-posta gönderiliyor...", "success");
+            showNotification("İşlem başlatıldı: E-posta hazırlanıyor...", "success");
 
             let photoLinksText = "";
 
-            // 1. ADIM: Mail için ImgBB'ye yükleme
+            // 1. ADIM: Varsa fotoğrafları e-posta için ImgBB'ye yükle
             if (uploadedPhotos.length > 0) {
                 const imgbbApiKey = "2a28102fa3199d44d2a11fd1e71ae2f0"; 
                 const linkArray = [];
@@ -545,7 +562,7 @@
 
             const finalMessage = generateReportText(photoLinksText);
 
-            // Mail Konusu
+            // Mail Konusu: Tarih | Saat | Hücre No | Vardiya Başlangıcı/Bitişi
             const currentDateStr = new Date().toLocaleDateString('tr-TR');
             const modeText = currentMode === 'start' ? 'Vardiya Başlangıcı' : 'Vardiya Bitişi';
             const dynamicSubject = `${currentDateStr} - ${shiftTime} - ${selectedCell} - ${modeText}`;
@@ -557,20 +574,20 @@
                     message_body: finalMessage
                 };
 
-                // 2. ADIM: EmailJS ile e-postayı gönder
+                // 2. ADIM: EmailJS ile ozgur_zengin@hotmail.com adresine gönder
                 const response = await emailjs.send('service_nar6lhb', 'template_0d6dg8g', templateParams);
                 
                 if (response.status === 200) {
-                    showNotification("✔ E-posta gönderildi! WhatsApp paylaşım ekranı açılıyor...", "success");
+                    showNotification("✔ E-posta gönderildi! WhatsApp açılıyor...", "success");
                 } else {
-                    showNotification("⚠ E-posta gönderilemedi! WhatsApp'a yönlendiriliyor...", "error");
+                    showNotification("⚠ E-posta iletilemedi, WhatsApp açılıyor...", "error");
                 }
             } catch (error) {
                 console.error("EmailJS Hata:", error);
                 showNotification("❌ E-posta hatası! WhatsApp'a yönlendiriliyor...", "error");
             }
 
-            // 3. ADIM: WhatsApp'a Doğrudan Dosya Olarak Aktarım (Web Share API)
+            // 3. ADIM: WhatsApp'ı ve telefon paylaşım menüsünü tetikle
             setTimeout(async () => {
                 const filesToShare = [];
                 for (let i = 0; i < uploadedPhotos.length; i++) {
@@ -584,7 +601,7 @@
                     }
                 }
 
-                // Mobil cihazlarda direkt fotoğraf dosyasıyla WhatsApp'ı tetikle
+                // Mobil cihazlarda fotoğrafları ve metni doğrudan paylaş
                 if (navigator.share && filesToShare.length > 0 && navigator.canShare && navigator.canShare({ files: filesToShare })) {
                     try {
                         await navigator.share({
@@ -598,7 +615,7 @@
                     }
                 }
 
-                // Eğer cihaz desteklemiyorsa metin ve linklerle yedek yönlendirme
+                // Desteklenmeyen cihazlarda standart metin aktarımı
                 const encodedMessage = encodeURIComponent(finalMessage);
                 const whatsappUrl = `https://api.whatsapp.com/send?text=${encodedMessage}`;
                 window.open(whatsappUrl, '_blank');
