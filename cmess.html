@@ -213,18 +213,26 @@
             </div>
         </div>
 
-        <!-- Action Buttons -->
+        <!-- Action Buttons & Progress Bar Group -->
         <div class="space-y-2.5 pt-1">
-            <!-- 1. Adım Butonu: E-Posta Gönder -->
-            <button onclick="sendEmailOnly()" class="w-full bg-gradient-to-r from-purple-600 to-pink-600 active:scale-[0.98] text-white font-bold py-3.5 px-5 rounded-2xl shadow-lg shadow-purple-900/40 transition-all duration-200 flex items-center justify-center gap-3 text-base border border-purple-500/30">
-                <i class="fa-solid fa-envelope text-xl"></i>
-                <span>1. Adım: E-Posta Gönder</span>
-            </button>
+            <!-- Progress / Loading Bar Modal Card (GÖNDERME BUTONUNUN ÜSTÜNE TAŞINDI) -->
+            <div id="loadingCard" class="hidden bg-cardBg border border-purple-500/50 rounded-2xl p-4 shadow-2xl space-y-3">
+                <div class="flex items-center justify-between text-xs text-purple-200">
+                    <span id="loadingStatusText" class="font-bold flex items-center gap-2">
+                        <i class="fa-solid fa-circle-notch fa-spin text-purple-400"></i> İşlem Yapılıyor...
+                    </span>
+                    <span id="loadingPercent" class="font-mono text-purple-400">0%</span>
+                </div>
+                <!-- Progress Bar -->
+                <div class="w-full bg-darkBg rounded-full h-2.5 overflow-hidden border border-cardBorder">
+                    <div id="progressBar" class="bg-gradient-to-r from-purple-600 to-pink-500 h-2.5 rounded-full transition-all duration-300" style="width: 0%"></div>
+                </div>
+            </div>
 
-            <!-- 2. Adım Butonu: WhatsApp ile Gönder (Başta Pasif/Gizli) -->
-            <button id="whatsappBtn" onclick="sendToWhatsApp()" class="w-full bg-gradient-to-r from-emerald-600 to-teal-600 active:scale-[0.98] text-white font-bold py-3.5 px-5 rounded-2xl shadow-lg shadow-emerald-900/40 transition-all duration-200 flex items-center justify-center gap-3 text-base border border-emerald-500/30 opacity-50 cursor-not-allowed" disabled>
-                <i class="fa-brands fa-whatsapp text-2xl"></i>
-                <span>2. Adım: WhatsApp ile Gönder</span>
+            <!-- Tek Buton: E-Posta Gönder & WhatsApp'a Aktar -->
+            <button id="sendBtn" onclick="sendReportProcess()" class="w-full bg-gradient-to-r from-purple-600 via-pink-600 to-emerald-600 active:scale-[0.98] text-white font-bold py-4 px-5 rounded-2xl shadow-xl shadow-purple-900/40 transition-all duration-200 flex items-center justify-center gap-3 text-base border border-purple-500/30">
+                <i class="fa-solid fa-paper-plane text-xl"></i>
+                <span>E-Posta Gönder & WhatsApp'a Aktar</span>
             </button>
             
             <button onclick="copyToClipboard()" class="w-full bg-cardBg hover:bg-cardBorder/60 active:scale-[0.98] text-purple-300 font-semibold py-2.5 px-4 rounded-xl transition-all duration-200 flex items-center justify-center gap-2 text-xs border border-cardBorder">
@@ -442,10 +450,33 @@
                 icon.className = "fa-solid fa-triangle-exclamation text-rose-400 text-base";
             }
 
-            box.classList.remove('hidden');
+            box.classList.add('hidden');
+            setTimeout(() => box.classList.remove('hidden'), 10);
         }
 
-        function generateReportText(photoLinks = "") {
+        // Buton Üstündeki Yükleme Barını Güncelleyen Fonksiyon
+        function updateProgress(percent, statusMessage) {
+            const loadingCard = document.getElementById('loadingCard');
+            const progressBar = document.getElementById('progressBar');
+            const loadingPercent = document.getElementById('loadingPercent');
+            const statusText = document.getElementById('loadingStatusText');
+
+            loadingCard.classList.remove('hidden');
+            progressBar.style.width = `${percent}%`;
+            loadingPercent.innerText = `${percent}%`;
+            if (statusMessage) {
+                statusText.innerHTML = `<i class="fa-solid fa-circle-notch fa-spin text-purple-400"></i> ${statusMessage}`;
+            }
+
+            if (percent >= 100) {
+                setTimeout(() => {
+                    loadingCard.classList.add('hidden');
+                }, 800);
+            }
+        }
+
+        // WhatsApp ve Panoya Kopyalama İçin Düz Metin
+        function generateReportText() {
             const shiftTime = document.getElementById('shiftTime').value;
             if (!selectedCell || !shiftTime) return null;
 
@@ -483,13 +514,109 @@
                 });
             }
 
-            if (photoLinks) {
-                message += `----------------------------------\n`;
-                message += `📸 Rapor Fotoğrafları (ImgBB):\n${photoLinks}\n`;
-            }
-
             message += `----------------------------------\n`;
             return message;
+        }
+
+        // E-Posta İçin Fotoğrafları Şık Tablo İçinde Gösteren Fonksiyon
+        function generateHTMLMailBody(photoUrls = []) {
+            const shiftTime = document.getElementById('shiftTime').value;
+            if (!selectedCell || !shiftTime) return "";
+
+            const parts = cellsData[selectedCell] || [];
+            const inputs = document.querySelectorAll('#partsContainer input');
+            const dataMap = {};
+
+            inputs.forEach(input => {
+                const partNo = input.getAttribute('data-part');
+                const type = input.getAttribute('data-type');
+                if (!dataMap[partNo]) dataMap[partNo] = {};
+                dataMap[partNo][type] = input.value.trim() !== '' ? input.value : '0';
+            });
+
+            const currentDateStr = new Date().toLocaleDateString('tr-TR');
+            const modeTitle = currentMode === 'start' ? '🚀 VARDİYA BAŞLANGIÇ RAPORU' : '🏁 VARDİYA BİTİŞ RAPORU';
+            const timeLabelText = currentMode === 'start' ? 'CMESS Çalıştırma Saati' : 'CMESS Kapatma Saati';
+
+            let html = `<div style="font-family: Arial, sans-serif; color: #333; line-height: 1.5; max-width: 450px;">`;
+            html += `<h2 style="color: #6b21a8; margin-bottom: 5px;">${modeTitle}</h2>`;
+            html += `<p style="margin: 0 0 10px 0;"><b>🏭 Hücre:</b> ${selectedCell}<br><b>✅ Rapor Tarihi:</b> ${currentDateStr}<br><b>⏰ ${timeLabelText}:</b> ${shiftTime}</p>`;
+            html += `<hr style="border: none; border-top: 1px solid #ddd; margin: 15px 0;">`;
+            
+            html += `<p><b>📋 Üretim ve Parça Tablosu:</b></p>`;
+            
+            // Veri Tablosu
+            html += `<div style="display: inline-flex; border: 1px solid #cbd5e1; border-radius: 6px; overflow: hidden; background-color: #f8fafc; font-family: Arial, sans-serif; font-size: 13px;">`;
+
+            if (currentMode === 'start') {
+                html += `<div style="border-right: 1px solid #cbd5e1;">`;
+                html += `<div style="background-color: #f1f5f9; color: #1e293b; font-weight: bold; padding: 10px 14px; border-bottom: 1px solid #cbd5e1; white-space: nowrap;">Parça No</div>`;
+                parts.forEach(partNo => {
+                    if (dataMap[partNo]) {
+                        html += `<div style="padding: 10px 14px; border-bottom: 1px solid #e2e8f0; font-family: monospace; background-color: #ffffff; white-space: nowrap;">${partNo}</div>`;
+                    }
+                });
+                html += `</div>`;
+
+                html += `<div style="text-align: center;">`;
+                html += `<div style="background-color: #f1f5f9; color: #1e293b; font-weight: bold; padding: 10px 14px; border-bottom: 1px solid #cbd5e1; white-space: nowrap;">Vardiya Başı Kalan</div>`;
+                parts.forEach(partNo => {
+                    if (dataMap[partNo]) {
+                        html += `<div style="padding: 10px 14px; border-bottom: 1px solid #e2e8f0; background-color: #ffffff; white-space: nowrap;">${dataMap[partNo].kasa}</div>`;
+                    }
+                });
+                html += `</div>`;
+
+            } else {
+                html += `<div style="border-right: 1px solid #cbd5e1;">`;
+                html += `<div style="background-color: #f1f5f9; color: #1e293b; font-weight: bold; padding: 10px 14px; border-bottom: 1px solid #cbd5e1; white-space: nowrap;">Parça No</div>`;
+                parts.forEach(partNo => {
+                    if (dataMap[partNo]) {
+                        html += `<div style="padding: 10px 14px; border-bottom: 1px solid #e2e8f0; font-family: monospace; background-color: #ffffff; white-space: nowrap;">${partNo}</div>`;
+                    }
+                });
+                html += `</div>`;
+
+                html += `<div style="text-align: center; border-right: 1px solid #cbd5e1;">`;
+                html += `<div style="background-color: #f1f5f9; color: #1e293b; font-weight: bold; padding: 10px 14px; border-bottom: 1px solid #cbd5e1; white-space: nowrap;">Üretim Adeti</div>`;
+                parts.forEach(partNo => {
+                    if (dataMap[partNo]) {
+                        html += `<div style="padding: 10px 14px; border-bottom: 1px solid #e2e8f0; background-color: #ffffff; white-space: nowrap;">${dataMap[partNo].uretilen}</div>`;
+                    }
+                });
+                html += `</div>`;
+
+                html += `<div style="text-align: center;">`;
+                html += `<div style="background-color: #f1f5f9; color: #1e293b; font-weight: bold; padding: 10px 14px; border-bottom: 1px solid #cbd5e1; white-space: nowrap;">Kalan</div>`;
+                parts.forEach(partNo => {
+                    if (dataMap[partNo]) {
+                        html += `<div style="padding: 10px 14px; border-bottom: 1px solid #e2e8f0; background-color: #ffffff; white-space: nowrap;">${dataMap[partNo].kalan}</div>`;
+                    }
+                });
+                html += `</div>`;
+            }
+
+            html += `</div>`; // Veri Tablosu Sonu
+
+            // Fotoğraflar İçin Şık HTML Tablosu (Önizleme Izgarası)
+            if (photoUrls && photoUrls.length > 0) {
+                html += `<hr style="border: none; border-top: 1px solid #ddd; margin: 15px 0;">`;
+                html += `<p><b>📸 Rapor Fotoğrafları:</b></p>`;
+                html += `<table cellpadding="0" cellspacing="0" border="0" style="border-collapse: collapse;"><tr>`;
+                
+                photoUrls.forEach((url, idx) => {
+                    html += `<td style="padding-right: 8px; padding-bottom: 8px; vertical-align: top;">`;
+                    html += `<a href="${url}" target="_blank" style="text-decoration: none;">`;
+                    html += `<img src="${url}" width="100" height="100" style="object-fit: cover; border-radius: 6px; border: 1px solid #cbd5e1; display: block;" alt="Rapor Fotoğrafı ${idx + 1}">`;
+                    html += `</a>`;
+                    html += `</td>`;
+                });
+                
+                html += `</tr></table>`;
+            }
+
+            html += `</div>`;
+            return html;
         }
 
         function updatePreview() {
@@ -521,8 +648,8 @@
             showNotification("Rapor metni panoya kopyalandı!", "success");
         }
 
-        // 1. ADIM: Sadece E-Posta Gönderme İşlemi
-        async function sendEmailOnly() {
+        // TEK BUTON: Fotoğrafları Yükle, E-Posta Gönder ve WhatsApp'a Aktar
+        async function sendReportProcess() {
             if (!selectedCell) {
                 showNotification("Lütfen önce bir hücre seçiniz!", "error");
                 return;
@@ -533,15 +660,22 @@
                 return;
             }
 
-            showNotification("Fotoğraflar yükleniyor ve e-posta gönderiliyor...", "success");
+            // 1. AŞAMA: Başlangıç
+            showNotification("Fotoğraflar ve Rapor Hazırlanıyor...", "success");
+            updateProgress(15, "Sistem hazırlanıyor...");
 
             let photoLinksText = "";
+            let photoUrlArray = [];
 
             if (uploadedPhotos.length > 0) {
                 const imgbbApiKey = "2a28102fa3199d44d2a11fd1e71ae2f0"; 
-                const linkArray = [];
+                const linkArrayText = [];
+                const totalPhotos = uploadedPhotos.length;
 
-                for (let i = 0; i < uploadedPhotos.length; i++) {
+                for (let i = 0; i < totalPhotos; i++) {
+                    const currentProgress = 20 + Math.floor(((i + 1) / totalPhotos) * 40);
+                    updateProgress(currentProgress, `Fotoğraf ${i + 1}/${totalPhotos} yükleniyor...`);
+
                     try {
                         const base64Data = uploadedPhotos[i].data.split(',')[1]; 
                         const formData = new FormData();
@@ -553,16 +687,20 @@
                         });
                         const data = await res.json();
                         if (data.success) {
-                            linkArray.push(`🔗 Fotoğraf ${i + 1}: ${data.data.url}`);
+                            linkArrayText.push(`🔗 Fotoğraf ${i + 1}: ${data.data.url}`);
+                            photoUrlArray.push(data.data.url);
                         }
                     } catch (err) {
                         console.error("ImgBB yükleme hatası:", err);
                     }
                 }
-                photoLinksText = linkArray.join('\n');
+                photoLinksText = linkArrayText.join('\n');
             }
 
-            const finalMessage = generateReportText(photoLinksText);
+            updateProgress(70, "E-posta gönderiliyor...");
+
+            const textMessageWhatsApp = generateReportText() + (photoLinksText ? `----------------------------------\n📸 Rapor Fotoğrafları:\n${photoLinksText}` : '');
+            const htmlMailBody = generateHTMLMailBody(photoUrlArray);
 
             const currentDateStr = new Date().toLocaleDateString('tr-TR');
             const modeText = currentMode === 'start' ? 'Vardiya Başlangıcı' : 'Vardiya Bitişi';
@@ -570,20 +708,29 @@
 
             try {
                 const templateParams = {
-                    to_email: "cmf1_mnt_tl8@coskunoz.com.tr", 
+                    to_email: "ozgur.zngn@gmail.com", 
                     report_title: dynamicSubject,
-                    message_body: finalMessage
+                    message_body: htmlMailBody 
                 };
 
                 const response = await emailjs.send('service_nar6lhb', 'template_0d6dg8g', templateParams);
                 
                 if (response.status === 200) {
-                    showNotification("✔ E-posta başarıyla gönderildi! Şimdi 2. Adım (WhatsApp) aktif.", "success");
+                    updateProgress(100, "İşlem Tamamlandı!");
+                    showNotification("✔ E-posta gönderildi. WhatsApp onay penceresi açılıyor...", "success");
                     
-                    // WhatsApp butonunu aktif et
-                    const whatsappBtn = document.getElementById('whatsappBtn');
-                    whatsappBtn.classList.remove('opacity-50', 'cursor-not-allowed');
-                    whatsappBtn.removeAttribute('disabled');
+                    // 2. AŞAMA: WhatsApp Onay İletisi (confirm)
+                    setTimeout(() => {
+                        const userConfirmed = confirm("E-posta başarıyla gönderildi!\nŞimdi WhatsApp üzerinden paylaşım yapmak için onay veriyor musunuz?");
+                        
+                        if (userConfirmed) {
+                            triggerWhatsApp(textMessageWhatsApp);
+                        } else {
+                            // Kullanıcı WhatsApp paylaşımını iptal ederse de sayfayı temizlemek için yenile
+                            location.reload();
+                        }
+                    }, 500);
+
                 } else {
                     showNotification("⚠ E-posta gönderilemedi!", "error");
                 }
@@ -593,11 +740,8 @@
             }
         }
 
-        // 2. ADIM: WhatsApp ile Gönder ve Ardından Sayfayı Sıfırla/Yenile
-        async function sendToWhatsApp() {
-            if (!selectedCell) return;
-            const message = generateReportText();
-
+        // WhatsApp Yönlendirme ve Sayfa Yenileme / Veri Temizleme Fonksiyonu
+        async function triggerWhatsApp(message) {
             const filesToShare = [];
             for (let i = 0; i < uploadedPhotos.length; i++) {
                 const photo = uploadedPhotos[i];
@@ -618,13 +762,16 @@
                         files: filesToShare
                     });
                     
-                    // Paylaşım bittikten sonra sayfayı sıfırla
+                    // WhatsApp paylaşımı sonrası veri temizleme için sayfa yenileme
                     setTimeout(() => {
                         location.reload();
                     }, 1000);
                     return;
                 } catch (err) {
-                    if (err.name === 'AbortError') return;
+                    if (err.name === 'AbortError') {
+                        location.reload();
+                        return;
+                    }
                 }
             }
 
@@ -632,7 +779,7 @@
             const whatsappUrl = `https://api.whatsapp.com/send?text=${encodedMessage}`;
             window.open(whatsappUrl, '_blank');
 
-            // Web üzerinden WhatsApp açıldıktan sonra sayfayı sıfırla
+            // WhatsApp bağlantısı açıldıktan sonra sayfayı sıfırla
             setTimeout(() => {
                 location.reload();
             }, 1500);
