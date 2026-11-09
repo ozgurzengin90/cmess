@@ -3,9 +3,9 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>CMESS-PLC & WhatsApp Raporlama</title>
+    <title>CMESS-PLC & Raporlama</title>
     
-    <!-- Dynamic SVG Favicon (Tarayıcı İkonu) -->
+    <!-- Dynamic SVG Favicon -->
     <link rel="icon" type="image/svg+xml" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><rect width='100' height='100' rx='25' fill='%23130d24'/><path d='M30 40 h40 v35 a10 10 0 0 1 -10 10 h-20 a10 10 0 0 1 -10 -10 z' fill='%23a855f7'/><circle cx='40' cy='55' r='6' fill='%23ffffff'/><circle cx='60' cy='55' r='6' fill='%23ffffff'/><path d='M43 70 h14' stroke='%23ffffff' stroke-width='4' stroke-linecap='round'/><path d='M50 20 v20' stroke='%23ec4899' stroke-width='6' stroke-linecap='round'/><circle cx='50' cy='18' r='7' fill='%23ec4899'/></svg>">
     <link rel="apple-touch-icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><rect width='100' height='100' rx='25' fill='%23130d24'/><path d='M30 40 h40 v35 a10 10 0 0 1 -10 10 h-20 a10 10 0 0 1 -10 -10 z' fill='%23a855f7'/><circle cx='40' cy='55' r='6' fill='%23ffffff'/><circle cx='60' cy='55' r='6' fill='%23ffffff'/><path d='M43 70 h14' stroke='%23ffffff' stroke-width='4' stroke-linecap='round'/><path d='M50 20 v20' stroke='%23ec4899' stroke-width='6' stroke-linecap='round'/><circle cx='50' cy='18' r='7' fill='%23ec4899'/></svg>">
 
@@ -32,6 +32,17 @@
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     <!-- Google Fonts Inter -->
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+    
+    <!-- EmailJS Kütüphanesi -->
+    <script type="text/javascript" src="https://cdn.jsdelivr.net/npm/@emailjs/browser@4/dist/email.min.js"></script>
+    <script type="text/javascript">
+        (function(){
+            emailjs.init({
+                publicKey: "-aiAkcjVISluyx02D",
+            });
+        })();
+    </script>
+
     <style>
         body {
             font-family: 'Inter', sans-serif;
@@ -44,9 +55,6 @@
         }
         .neon-glow-pink {
             box-shadow: 0 0 20px rgba(236, 72, 153, 0.35);
-        }
-        .neon-border {
-            border: 1px solid rgba(168, 85, 247, 0.4);
         }
         .neon-text {
             text-shadow: 0 0 10px rgba(192, 132, 252, 0.5);
@@ -68,9 +76,6 @@
             background: #2e1c52;
             border-radius: 4px;
         }
-        ::-webkit-scrollbar-thumb:hover {
-            background: #a855f7;
-        }
         input[type="number"], input[type="time"], select {
             font-size: 16px !important;
         }
@@ -87,7 +92,7 @@
                     </div>
                     <div>
                         <h1 class="text-base font-bold tracking-wide neon-text text-white leading-tight">CMESS-PLC TAKİP</h1>
-                        <p class="text-[10px] text-purple-300 font-medium">WhatsApp Raporlama</p>
+                        <p class="text-[10px] text-purple-300 font-medium">E-Posta & WhatsApp Raporlama</p>
                     </div>
                 </div>
                 <div class="flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-purple-950/80 border border-purple-500/40 text-purple-300 text-xs font-semibold">
@@ -111,7 +116,7 @@
     <main class="flex-1 max-w-md w-full mx-auto px-4 py-4 space-y-4">
         
         <!-- Notification Banner -->
-        <div id="notificationBox" class="hidden p-3.5 rounded-xl border text-xs flex items-center gap-2.5 transition-all duration-300">
+        <div id="notificationBox" class="hidden p-3.5 rounded-xl border text-xs flex items-center gap-2.5 transition-all duration-300 shadow-lg">
             <i id="notificationIcon" class="fa-solid text-base"></i>
             <span id="notificationText" class="font-semibold"></span>
         </div>
@@ -123,7 +128,7 @@
                 <span id="partCountBadge" class="text-[10px] text-purple-400 font-normal lowercase bg-purple-950/80 px-2 py-0.5 rounded-md border border-purple-800">0 parça</span>
             </label>
             <div class="relative">
-                <select id="cellSelect" onchange="onCellChange(this.value)" class="w-full bg-darkBg border rounded-xl px-4 py-3.5 text-white font-bold text-sm appearance-none focus:outline-none focus:border-purple-500 focus:ring-2 focus:ring-purple-500/20 transition-all blinking-select">
+                <select id="cellSelect" onchange="onCellChange(this.value)" class="w-full bg-darkBg border rounded-xl px-4 py-3.5 text-white font-bold text-sm appearance-none focus:outline-none focus:border-purple-500 transition-all blinking-select">
                     <option value="" disabled selected>-- Hücre Seçiniz --</option>
                     <option value="Hücre 4">Hücre 4</option>
 					<option value="Hücre 5">Hücre 5</option>
@@ -135,7 +140,6 @@
 					<option value="Hücre 48">Hücre 48</option>
 					<option value="Hücre 52">Hücre 52</option>
 					<option value="Hücre 59s1">Hücre 59s1</option>
-                    
                 </select>
                 <div class="absolute right-4 top-1/2 -translate-y-1/2 text-purple-400 pointer-events-none">
                     <i class="fa-solid fa-chevron-down text-xs"></i>
@@ -152,7 +156,7 @@
                 </button>
             </label>
             <div class="relative w-full">
-                <input type="time" id="shiftTime" oninput="updatePreview()" class="w-full bg-darkBg border border-cardBorder rounded-xl px-4 py-3 text-white font-bold text-base focus:outline-none focus:border-purple-500 focus:ring-2 focus:ring-purple-500/20 transition-all">
+                <input type="time" id="shiftTime" oninput="updatePreview()" class="w-full bg-darkBg border border-cardBorder rounded-xl px-4 py-3 text-white font-bold text-base focus:outline-none focus:border-purple-500 transition-all">
                 <div class="absolute right-4 top-1/2 -translate-y-1/2 text-purple-400 pointer-events-none">
                     <i class="fa-regular fa-clock"></i>
                 </div>
@@ -202,18 +206,33 @@
         <!-- Live Message Preview Card -->
         <div class="bg-cardBg border border-cardBorder rounded-2xl p-4 shadow-xl space-y-2">
             <label class="block text-xs font-bold text-purple-300 uppercase tracking-wider flex items-center gap-1.5">
-                <i class="fa-regular fa-eye text-purple-400"></i> Canlı Mesaj Önizlemesi
+                <i class="fa-regular fa-eye text-purple-400"></i> Canlı Rapor Önizlemesi
             </label>
             <div id="livePreview" class="bg-darkBg border border-cardBorder/80 rounded-xl p-3 font-mono text-[11px] text-purple-200/95 whitespace-pre-wrap leading-relaxed max-h-48 overflow-y-auto">
                 Lütfen hücre ve saat seçimi yapınız...
             </div>
         </div>
 
-        <!-- Action Buttons -->
+        <!-- Action Buttons & Progress Bar Group -->
         <div class="space-y-2.5 pt-1">
-            <button onclick="sendToWhatsApp()" class="w-full bg-gradient-to-r from-emerald-600 to-teal-600 active:scale-[0.98] text-white font-bold py-3.5 px-5 rounded-2xl shadow-lg shadow-emerald-900/40 transition-all duration-200 flex items-center justify-center gap-3 text-base border border-emerald-500/30">
-                <i class="fa-brands fa-whatsapp text-2xl"></i>
-                <span>WhatsApp ile Gönder</span>
+            <!-- Progress / Loading Bar Modal Card (GÖNDERME BUTONUNUN ÜSTÜNE TAŞINDI) -->
+            <div id="loadingCard" class="hidden bg-cardBg border border-purple-500/50 rounded-2xl p-4 shadow-2xl space-y-3">
+                <div class="flex items-center justify-between text-xs text-purple-200">
+                    <span id="loadingStatusText" class="font-bold flex items-center gap-2">
+                        <i class="fa-solid fa-circle-notch fa-spin text-purple-400"></i> İşlem Yapılıyor...
+                    </span>
+                    <span id="loadingPercent" class="font-mono text-purple-400">0%</span>
+                </div>
+                <!-- Progress Bar -->
+                <div class="w-full bg-darkBg rounded-full h-2.5 overflow-hidden border border-cardBorder">
+                    <div id="progressBar" class="bg-gradient-to-r from-purple-600 to-pink-500 h-2.5 rounded-full transition-all duration-300" style="width: 0%"></div>
+                </div>
+            </div>
+
+            <!-- Tek Buton: E-Posta Gönder & WhatsApp'a Aktar -->
+            <button id="sendBtn" onclick="sendReportProcess()" class="w-full bg-gradient-to-r from-purple-600 via-pink-600 to-emerald-600 active:scale-[0.98] text-white font-bold py-4 px-5 rounded-2xl shadow-xl shadow-purple-900/40 transition-all duration-200 flex items-center justify-center gap-3 text-base border border-purple-500/30">
+                <i class="fa-solid fa-paper-plane text-xl"></i>
+                <span>E-Posta Gönder & WhatsApp'a Aktar</span>
             </button>
             
             <button onclick="copyToClipboard()" class="w-full bg-cardBg hover:bg-cardBorder/60 active:scale-[0.98] text-purple-300 font-semibold py-2.5 px-4 rounded-xl transition-all duration-200 flex items-center justify-center gap-2 text-xs border border-cardBorder">
@@ -251,7 +270,7 @@
             "Hücre 21": ["774502600","774502700","774504200","774504300","774504400","774504500","774502002","774504900"],
             "Hücre 22": ["774502202", "774502301"],
 			"Hücre 41": ["774501902","774501100","774506200","774506300","774506800","774506900"],
-			 "Hücre 43": ["774501201", "774501401","774507100"],
+			"Hücre 43": ["774501201", "774501401","774507100"],
 			"Hücre 45": ["774501603", "774501703"],
             "Hücre 48": ["774500501", "774500601" , "774503201" , "774503301"],
 			"Hücre 52": ["774505500", "774505600" , "774505700" , "774505800"],
@@ -278,12 +297,10 @@
         function onCellChange(cellName) {
             selectedCell = cellName;
             const selectEl = document.getElementById('cellSelect');
-            
             if (cellName) {
                 selectEl.classList.remove('blinking-select');
                 selectEl.style.borderColor = '#2e1c52';
             }
-
             document.getElementById('selectedCellBadge').innerText = cellName;
             renderPartInputs();
             updatePreview();
@@ -303,22 +320,19 @@
             if (mode === 'start') {
                 tabStart.className = "flex-1 py-2.5 rounded-lg text-xs font-bold transition-all duration-200 flex items-center justify-center gap-2 bg-purple-600 text-white neon-glow";
                 tabEnd.className = "flex-1 py-2.5 rounded-lg text-xs font-bold transition-all duration-200 flex items-center justify-center gap-2 text-purple-300 hover:text-white";
-                timeLabel.innerHTML = '<span class="flex items-center gap-1.5"><i class="fa-solid fa-clock text-purple-400"></i> Robot Çalıştırma Saati</span><button type="button" onclick="setCurrentTime()" class="px-2.5 py-1 rounded-lg bg-purple-950/90 border border-purple-500/50 text-purple-200 text-xs font-bold hover:bg-purple-900 active:scale-95 transition-all shadow-sm flex items-center gap-1.5"><i class="fa-solid fa-bolt text-[10px] text-purple-400"></i> Şimdi Al</button>';
+                timeLabel.innerHTML = '<span class="flex items-center gap-1.5"><i class="fa-solid fa-clock text-purple-400"></i> Robot Çalıştırma Saati</span><button type="button" onclick="setCurrentTime()" class="px-2.5 py-1 rounded-lg bg-purple-950/90 border border-purple-500/50 text-purple-200 text-xs font-bold hover:bg-purple-900 transition-all shadow-sm flex items-center gap-1.5"><i class="fa-solid fa-bolt text-[10px] text-purple-400"></i> Şimdi Al</button>';
             } else {
                 tabEnd.className = "flex-1 py-2.5 rounded-lg text-xs font-bold transition-all duration-200 flex items-center justify-center gap-2 bg-pink-600 text-white neon-glow-pink";
                 tabStart.className = "flex-1 py-2.5 rounded-lg text-xs font-bold transition-all duration-200 flex items-center justify-center gap-2 text-purple-300 hover:text-white";
-                timeLabel.innerHTML = '<span class="flex items-center gap-1.5"><i class="fa-solid fa-clock text-pink-400"></i> Robot Kapatma Saati</span><button type="button" onclick="setCurrentTime()" class="px-2.5 py-1 rounded-lg bg-pink-950/90 border border-pink-500/50 text-pink-200 text-xs font-bold hover:bg-pink-900 active:scale-95 transition-all shadow-sm flex items-center gap-1.5"><i class="fa-solid fa-bolt text-[10px] text-pink-400"></i> Şimdi Al</button>';
+                timeLabel.innerHTML = '<span class="flex items-center gap-1.5"><i class="fa-solid fa-clock text-pink-400"></i> Robot Kapatma Saati</span><button type="button" onclick="setCurrentTime()" class="px-2.5 py-1 rounded-lg bg-pink-950/90 border border-pink-500/50 text-pink-200 text-xs font-bold hover:bg-pink-900 transition-all shadow-sm flex items-center gap-1.5"><i class="fa-solid fa-bolt text-[10px] text-pink-400"></i> Şimdi Al</button>';
             }
-            if (selectedCell) {
-                renderPartInputs();
-            }
+            if (selectedCell) renderPartInputs();
             updatePreview();
         }
 
         function renderPartInputs() {
             const container = document.getElementById('partsContainer');
             const parts = cellsData[selectedCell] || [];
-            
             document.getElementById('partCountBadge').innerText = `${parts.length} parça`;
             container.innerHTML = '';
 
@@ -429,23 +443,42 @@
             text.innerText = message;
             
             if (type === 'success') {
-                box.className = "p-3.5 rounded-xl border text-xs flex items-center gap-2.5 transition-all duration-300 bg-emerald-950/90 border-emerald-500 text-emerald-200";
+                box.className = "p-3.5 rounded-xl border text-xs flex items-center gap-2.5 transition-all duration-300 bg-emerald-950/90 border-emerald-500 text-emerald-200 shadow-emerald-900/50";
                 icon.className = "fa-solid fa-circle-check text-emerald-400 text-base";
             } else {
-                box.className = "p-3.5 rounded-xl border text-xs flex items-center gap-2.5 transition-all duration-300 bg-rose-950/90 border-rose-500 text-rose-200";
+                box.className = "p-3.5 rounded-xl border text-xs flex items-center gap-2.5 transition-all duration-300 bg-rose-950/90 border-rose-500 text-rose-200 shadow-rose-900/50";
                 icon.className = "fa-solid fa-triangle-exclamation text-rose-400 text-base";
             }
 
-            box.classList.remove('hidden');
-            setTimeout(() => {
-                box.classList.add('hidden');
-            }, 3500);
+            box.classList.add('hidden');
+            setTimeout(() => box.classList.remove('hidden'), 10);
         }
 
+        // Buton Üstündeki Yükleme Barını Güncelleyen Fonksiyon
+        function updateProgress(percent, statusMessage) {
+            const loadingCard = document.getElementById('loadingCard');
+            const progressBar = document.getElementById('progressBar');
+            const loadingPercent = document.getElementById('loadingPercent');
+            const statusText = document.getElementById('loadingStatusText');
+
+            loadingCard.classList.remove('hidden');
+            progressBar.style.width = `${percent}%`;
+            loadingPercent.innerText = `${percent}%`;
+            if (statusMessage) {
+                statusText.innerHTML = `<i class="fa-solid fa-circle-notch fa-spin text-purple-400"></i> ${statusMessage}`;
+            }
+
+            if (percent >= 100) {
+                setTimeout(() => {
+                    loadingCard.classList.add('hidden');
+                }, 800);
+            }
+        }
+
+        // WhatsApp ve Panoya Kopyalama İçin Düz Metin
         function generateReportText() {
             const shiftTime = document.getElementById('shiftTime').value;
-            if (!selectedCell) return null;
-            if (!shiftTime) return null;
+            if (!selectedCell || !shiftTime) return null;
 
             const parts = cellsData[selectedCell] || [];
             const inputs = document.querySelectorAll('#partsContainer input');
@@ -454,15 +487,11 @@
             inputs.forEach(input => {
                 const partNo = input.getAttribute('data-part');
                 const type = input.getAttribute('data-type');
-                
-                if (!dataMap[partNo]) {
-                    dataMap[partNo] = {};
-                }
+                if (!dataMap[partNo]) dataMap[partNo] = {};
                 dataMap[partNo][type] = input.value.trim() !== '' ? input.value : '0';
             });
 
             let message = "";
-
             if (currentMode === 'start') {
                 message += `🚀 VARDİYA BAŞLANGIÇ RAPORU\n`;
                 message += `🏭 Hücre: ${selectedCell}\n`;
@@ -470,11 +499,8 @@
                 message += `⏰ CMESS Çalıştırma Saati: ${shiftTime}\n`;
                 message += `----------------------------------\n`;
                 message += `📦 Kasa İçi Parça Adetleri:\n`;
-
                 parts.forEach(partNo => {
-                    if (dataMap[partNo]) {
-                        message += `• ${partNo} ➔ ${dataMap[partNo].kasa} adet\n`;
-                    }
+                    if (dataMap[partNo]) message += `• ${partNo} ➔ ${dataMap[partNo].kasa} adet\n`;
                 });
             } else {
                 message += `🏁 VARDİYA BİTİŞ RAPORU\n`;
@@ -483,23 +509,114 @@
                 message += `⏰ CMESS Kapatma Saati: ${shiftTime}\n`;
                 message += `----------------------------------\n`;
                 message += `📊 Üretim ve Kasa Durumları:\n`;
-
                 parts.forEach(partNo => {
-                    if (dataMap[partNo]) {
-                        message += `•${partNo}➔Üretilen:${dataMap[partNo].uretilen} | Kalan: ${dataMap[partNo].kalan}\n`;
-                    }
+                    if (dataMap[partNo]) message += `• ${partNo} ➔ Üretilen: ${dataMap[partNo].uretilen} | Kalan: ${dataMap[partNo].kalan}\n`;
                 });
             }
 
-            if (uploadedPhotos.length > 0) {
-                message += `----------------------------------\n`;
-                message += `📸Eklenen Fotoğraf Sayısı: ${uploadedPhotos.length} adet\n`;
+            message += `----------------------------------\n`;
+            return message;
+        }
+
+        // E-Posta İçin Fotoğrafları Şık Tablo İçinde Gösteren Fonksiyon
+        function generateHTMLMailBody(photoUrls = []) {
+            const shiftTime = document.getElementById('shiftTime').value;
+            if (!selectedCell || !shiftTime) return "";
+
+            const parts = cellsData[selectedCell] || [];
+            const inputs = document.querySelectorAll('#partsContainer input');
+            const dataMap = {};
+
+            inputs.forEach(input => {
+                const partNo = input.getAttribute('data-part');
+                const type = input.getAttribute('data-type');
+                if (!dataMap[partNo]) dataMap[partNo] = {};
+                dataMap[partNo][type] = input.value.trim() !== '' ? input.value : '0';
+            });
+
+            const currentDateStr = new Date().toLocaleDateString('tr-TR');
+            const modeTitle = currentMode === 'start' ? '🚀 VARDİYA BAŞLANGIÇ RAPORU' : '🏁 VARDİYA BİTİŞ RAPORU';
+            const timeLabelText = currentMode === 'start' ? 'CMESS Çalıştırma Saati' : 'CMESS Kapatma Saati';
+
+            let html = `<div style="font-family: Arial, sans-serif; color: #333; line-height: 1.5; max-width: 450px;">`;
+            html += `<h2 style="color: #6b21a8; margin-bottom: 5px;">${modeTitle}</h2>`;
+            html += `<p style="margin: 0 0 10px 0;"><b>🏭 Hücre:</b> ${selectedCell}<br><b>✅ Rapor Tarihi:</b> ${currentDateStr}<br><b>⏰ ${timeLabelText}:</b> ${shiftTime}</p>`;
+            html += `<hr style="border: none; border-top: 1px solid #ddd; margin: 15px 0;">`;
+            
+            html += `<p><b>📋 Üretim ve Parça Tablosu:</b></p>`;
+            
+            // Veri Tablosu
+            html += `<div style="display: inline-flex; border: 1px solid #cbd5e1; border-radius: 6px; overflow: hidden; background-color: #f8fafc; font-family: Arial, sans-serif; font-size: 13px;">`;
+
+            if (currentMode === 'start') {
+                html += `<div style="border-right: 1px solid #cbd5e1;">`;
+                html += `<div style="background-color: #f1f5f9; color: #1e293b; font-weight: bold; padding: 10px 14px; border-bottom: 1px solid #cbd5e1; white-space: nowrap;">Parça No</div>`;
+                parts.forEach(partNo => {
+                    if (dataMap[partNo]) {
+                        html += `<div style="padding: 10px 14px; border-bottom: 1px solid #e2e8f0; font-family: monospace; background-color: #ffffff; white-space: nowrap;">${partNo}</div>`;
+                    }
+                });
+                html += `</div>`;
+
+                html += `<div style="text-align: center;">`;
+                html += `<div style="background-color: #f1f5f9; color: #1e293b; font-weight: bold; padding: 10px 14px; border-bottom: 1px solid #cbd5e1; white-space: nowrap;">Vardiya Başı Kalan</div>`;
+                parts.forEach(partNo => {
+                    if (dataMap[partNo]) {
+                        html += `<div style="padding: 10px 14px; border-bottom: 1px solid #e2e8f0; background-color: #ffffff; white-space: nowrap;">${dataMap[partNo].kasa}</div>`;
+                    }
+                });
+                html += `</div>`;
+
+            } else {
+                html += `<div style="border-right: 1px solid #cbd5e1;">`;
+                html += `<div style="background-color: #f1f5f9; color: #1e293b; font-weight: bold; padding: 10px 14px; border-bottom: 1px solid #cbd5e1; white-space: nowrap;">Parça No</div>`;
+                parts.forEach(partNo => {
+                    if (dataMap[partNo]) {
+                        html += `<div style="padding: 10px 14px; border-bottom: 1px solid #e2e8f0; font-family: monospace; background-color: #ffffff; white-space: nowrap;">${partNo}</div>`;
+                    }
+                });
+                html += `</div>`;
+
+                html += `<div style="text-align: center; border-right: 1px solid #cbd5e1;">`;
+                html += `<div style="background-color: #f1f5f9; color: #1e293b; font-weight: bold; padding: 10px 14px; border-bottom: 1px solid #cbd5e1; white-space: nowrap;">Üretim Adeti</div>`;
+                parts.forEach(partNo => {
+                    if (dataMap[partNo]) {
+                        html += `<div style="padding: 10px 14px; border-bottom: 1px solid #e2e8f0; background-color: #ffffff; white-space: nowrap;">${dataMap[partNo].uretilen}</div>`;
+                    }
+                });
+                html += `</div>`;
+
+                html += `<div style="text-align: center;">`;
+                html += `<div style="background-color: #f1f5f9; color: #1e293b; font-weight: bold; padding: 10px 14px; border-bottom: 1px solid #cbd5e1; white-space: nowrap;">Kalan</div>`;
+                parts.forEach(partNo => {
+                    if (dataMap[partNo]) {
+                        html += `<div style="padding: 10px 14px; border-bottom: 1px solid #e2e8f0; background-color: #ffffff; white-space: nowrap;">${dataMap[partNo].kalan}</div>`;
+                    }
+                });
+                html += `</div>`;
             }
 
-            message += `----------------------------------\n`;
-            
+            html += `</div>`; // Veri Tablosu Sonu
 
-            return message;
+            // Fotoğraflar İçin Şık HTML Tablosu (Önizleme Izgarası)
+            if (photoUrls && photoUrls.length > 0) {
+                html += `<hr style="border: none; border-top: 1px solid #ddd; margin: 15px 0;">`;
+                html += `<p><b>📸 Rapor Fotoğrafları:</b></p>`;
+                html += `<table cellpadding="0" cellspacing="0" border="0" style="border-collapse: collapse;"><tr>`;
+                
+                photoUrls.forEach((url, idx) => {
+                    html += `<td style="padding-right: 8px; padding-bottom: 8px; vertical-align: top;">`;
+                    html += `<a href="${url}" target="_blank" style="text-decoration: none;">`;
+                    html += `<img src="${url}" width="100" height="100" style="object-fit: cover; border-radius: 6px; border: 1px solid #cbd5e1; display: block;" alt="Rapor Fotoğrafı ${idx + 1}">`;
+                    html += `</a>`;
+                    html += `</td>`;
+                });
+                
+                html += `</tr></table>`;
+            }
+
+            html += `</div>`;
+            return html;
         }
 
         function updatePreview() {
@@ -509,11 +626,7 @@
                 previewEl.innerText = "Lütfen rapor oluşturmak için bir hücre seçiniz...";
                 return;
             }
-            if (message) {
-                previewEl.innerText = message;
-            } else {
-                previewEl.innerText = "Lütfen saat bilgisini giriniz...";
-            }
+            previewEl.innerText = message ? message : "Lütfen saat bilgisini giriniz...";
         }
 
         function copyToClipboard() {
@@ -526,30 +639,109 @@
                 showNotification("Lütfen geçerli bir saat giriniz!", "error");
                 return;
             }
-
             const tempInput = document.createElement("textarea");
             tempInput.value = message;
             document.body.appendChild(tempInput);
             tempInput.select();
             document.execCommand("copy");
             document.body.removeChild(tempInput);
-
             showNotification("Rapor metni panoya kopyalandı!", "success");
         }
 
-        // Web Share API Destekli Gönderim Fonksiyonu
-        async function sendToWhatsApp() {
+        // TEK BUTON: Fotoğrafları Yükle, E-Posta Gönder ve WhatsApp'a Aktar
+        async function sendReportProcess() {
             if (!selectedCell) {
                 showNotification("Lütfen önce bir hücre seçiniz!", "error");
                 return;
             }
-            const message = generateReportText();
-            if (!message) {
+            const shiftTime = document.getElementById('shiftTime').value;
+            if (!shiftTime) {
                 showNotification("Lütfen geçerli bir saat giriniz!", "error");
                 return;
             }
 
-            // Fotoğrafları File nesnelerine dönüştür
+            // 1. AŞAMA: Başlangıç
+            showNotification("Fotoğraflar ve Rapor Hazırlanıyor...", "success");
+            updateProgress(15, "Sistem hazırlanıyor...");
+
+            let photoLinksText = "";
+            let photoUrlArray = [];
+
+            if (uploadedPhotos.length > 0) {
+                const imgbbApiKey = "2a28102fa3199d44d2a11fd1e71ae2f0"; 
+                const linkArrayText = [];
+                const totalPhotos = uploadedPhotos.length;
+
+                for (let i = 0; i < totalPhotos; i++) {
+                    const currentProgress = 20 + Math.floor(((i + 1) / totalPhotos) * 40);
+                    updateProgress(currentProgress, `Fotoğraf ${i + 1}/${totalPhotos} yükleniyor...`);
+
+                    try {
+                        const base64Data = uploadedPhotos[i].data.split(',')[1]; 
+                        const formData = new FormData();
+                        formData.append("image", base64Data);
+
+                        const res = await fetch(`https://api.imgbb.com/1/upload?key=${imgbbApiKey}`, {
+                            method: "POST",
+                            body: formData
+                        });
+                        const data = await res.json();
+                        if (data.success) {
+                            linkArrayText.push(`🔗 Fotoğraf ${i + 1}: ${data.data.url}`);
+                            photoUrlArray.push(data.data.url);
+                        }
+                    } catch (err) {
+                        console.error("ImgBB yükleme hatası:", err);
+                    }
+                }
+                photoLinksText = linkArrayText.join('\n');
+            }
+
+            updateProgress(70, "E-posta gönderiliyor...");
+
+            const textMessageWhatsApp = generateReportText() + (photoLinksText ? `----------------------------------\n📸 Rapor Fotoğrafları:\n${photoLinksText}` : '');
+            const htmlMailBody = generateHTMLMailBody(photoUrlArray);
+
+            const currentDateStr = new Date().toLocaleDateString('tr-TR');
+            const modeText = currentMode === 'start' ? 'Vardiya Başlangıcı' : 'Vardiya Bitişi';
+            const dynamicSubject = `${currentDateStr} - ${shiftTime} - ${selectedCell} - ${modeText}`;
+
+            try {
+                const templateParams = {
+                    to_email: "ozgur.zngn@gmail.com, cmf1_mnt_tl8@coskunoz.com.tr, cmf1_mnt_tl5@coskunoz.com.tr", 
+                    report_title: dynamicSubject,
+                    message_body: htmlMailBody 
+                };
+
+                const response = await emailjs.send('service_nar6lhb', 'template_0d6dg8g', templateParams);
+                
+                if (response.status === 200) {
+                    updateProgress(100, "İşlem Tamamlandı!");
+                    showNotification("✔ E-posta gönderildi. WhatsApp onay penceresi açılıyor...", "success");
+                    
+                    // 2. AŞAMA: WhatsApp Onay İletisi (confirm)
+                    setTimeout(() => {
+                        const userConfirmed = confirm("E-posta başarıyla gönderildi!\nŞimdi WhatsApp üzerinden paylaşım yapmak için onay veriyor musunuz?");
+                        
+                        if (userConfirmed) {
+                            triggerWhatsApp(textMessageWhatsApp);
+                        } else {
+                            // Kullanıcı WhatsApp paylaşımını iptal ederse de sayfayı temizlemek için yenile
+                            location.reload();
+                        }
+                    }, 500);
+
+                } else {
+                    showNotification("⚠ E-posta gönderilemedi!", "error");
+                }
+            } catch (error) {
+                console.error("EmailJS Hata:", error);
+                showNotification("❌ E-posta gönderilirken hata oluştu!", "error");
+            }
+        }
+
+        // WhatsApp Yönlendirme ve Sayfa Yenileme / Veri Temizleme Fonksiyonu
+        async function triggerWhatsApp(message) {
             const filesToShare = [];
             for (let i = 0; i < uploadedPhotos.length; i++) {
                 const photo = uploadedPhotos[i];
@@ -562,7 +754,6 @@
                 }
             }
 
-            // Web Share API kontrolü (Mobil cihazlar için)
             if (navigator.share && filesToShare.length > 0 && navigator.canShare && navigator.canShare({ files: filesToShare })) {
                 try {
                     await navigator.share({
@@ -570,26 +761,28 @@
                         text: message,
                         files: filesToShare
                     });
-                    showNotification("Rapor ve fotoğraflar paylaşıldı!", "success");
+                    
+                    // WhatsApp paylaşımı sonrası veri temizleme için sayfa yenileme
+                    setTimeout(() => {
+                        location.reload();
+                    }, 1000);
                     return;
                 } catch (err) {
-                    if (err.name === 'AbortError') return; // Kullanıcı iptal ettiyse sessiz kal
+                    if (err.name === 'AbortError') {
+                        location.reload();
+                        return;
+                    }
                 }
             }
 
-            // Eğer Web Share API desteklenmiyorsa veya fotoğraf yoksa standart WhatsApp yönlendirmesi
             const encodedMessage = encodeURIComponent(message);
             const whatsappUrl = `https://api.whatsapp.com/send?text=${encodedMessage}`;
-            
-            if (uploadedPhotos.length > 0) {
-                showNotification("WhatsApp açılıyor... Metin aktarıldı, fotoğrafları WhatsApp'tan ekleyebilirsiniz.", "success");
-            } else {
-                showNotification("WhatsApp açılıyor...", "success");
-            }
+            window.open(whatsappUrl, '_blank');
 
+            // WhatsApp bağlantısı açıldıktan sonra sayfayı sıfırla
             setTimeout(() => {
-                window.open(whatsappUrl, '_blank');
-            }, 300);
+                location.reload();
+            }, 1500);
         }
     </script>
 </body>
