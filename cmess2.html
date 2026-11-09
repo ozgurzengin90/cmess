@@ -215,8 +215,8 @@
 
         <!-- Action Buttons & Progress Bar Group -->
         <div class="space-y-2.5 pt-1">
-            <!-- Progress / Loading Bar Modal Card (Hemen butonların üstüne konumlandırıldı) -->
-            <div id="loadingCard" class="hidden bg-cardBg border border-purple-500/50 rounded-2xl p-4 shadow-2xl space-y-3 mb-3">
+            <!-- Progress / Loading Bar Modal Card (GÖNDERME BUTONUNUN ÜSTÜNE TAŞINDI) -->
+            <div id="loadingCard" class="hidden bg-cardBg border border-purple-500/50 rounded-2xl p-4 shadow-2xl space-y-3">
                 <div class="flex items-center justify-between text-xs text-purple-200">
                     <span id="loadingStatusText" class="font-bold flex items-center gap-2">
                         <i class="fa-solid fa-circle-notch fa-spin text-purple-400"></i> İşlem Yapılıyor...
@@ -229,8 +229,8 @@
                 </div>
             </div>
 
-            <!-- Tek Buton: E-Posta Gönder & WhatsApp ile Paylaş -->
-            <button onclick="sendReportProcess()" class="w-full bg-gradient-to-r from-purple-600 via-pink-600 to-emerald-600 active:scale-[0.98] text-white font-bold py-4 px-5 rounded-2xl shadow-xl shadow-purple-900/40 transition-all duration-200 flex items-center justify-center gap-3 text-base border border-purple-500/30">
+            <!-- Tek Buton: E-Posta Gönder & WhatsApp'a Aktar -->
+            <button id="sendBtn" onclick="sendReportProcess()" class="w-full bg-gradient-to-r from-purple-600 via-pink-600 to-emerald-600 active:scale-[0.98] text-white font-bold py-4 px-5 rounded-2xl shadow-xl shadow-purple-900/40 transition-all duration-200 flex items-center justify-center gap-3 text-base border border-purple-500/30">
                 <i class="fa-solid fa-paper-plane text-xl"></i>
                 <span>E-Posta Gönder & WhatsApp'a Aktar</span>
             </button>
@@ -450,9 +450,11 @@
                 icon.className = "fa-solid fa-triangle-exclamation text-rose-400 text-base";
             }
 
-            box.classList.remove('hidden');
+            box.classList.add('hidden');
+            setTimeout(() => box.classList.remove('hidden'), 10);
         }
 
+        // Buton Üstündeki Yükleme Barını Güncelleyen Fonksiyon
         function updateProgress(percent, statusMessage) {
             const loadingCard = document.getElementById('loadingCard');
             const progressBar = document.getElementById('progressBar');
@@ -473,7 +475,8 @@
             }
         }
 
-        function generateReportText(photoLinks = "") {
+        // WhatsApp ve Panoya Kopyalama İçin Düz Metin
+        function generateReportText() {
             const shiftTime = document.getElementById('shiftTime').value;
             if (!selectedCell || !shiftTime) return null;
 
@@ -511,13 +514,102 @@
                 });
             }
 
-            if (photoLinks) {
-                message += `----------------------------------\n`;
-                message += `📸 Rapor Fotoğrafları (ImgBB):\n${photoLinks}\n`;
-            }
-
             message += `----------------------------------\n`;
             return message;
+        }
+
+        // E-Posta İçin Kenar Boşlukları Giderilmiş ve İçeriğe Tam Oturan Flexbox Yapısı
+        function generateHTMLMailBody(photoLinksHTML = "") {
+            const shiftTime = document.getElementById('shiftTime').value;
+            if (!selectedCell || !shiftTime) return "";
+
+            const parts = cellsData[selectedCell] || [];
+            const inputs = document.querySelectorAll('#partsContainer input');
+            const dataMap = {};
+
+            inputs.forEach(input => {
+                const partNo = input.getAttribute('data-part');
+                const type = input.getAttribute('data-type');
+                if (!dataMap[partNo]) dataMap[partNo] = {};
+                dataMap[partNo][type] = input.value.trim() !== '' ? input.value : '0';
+            });
+
+            const currentDateStr = new Date().toLocaleDateString('tr-TR');
+            const modeTitle = currentMode === 'start' ? '🚀 VARDİYA BAŞLANGIÇ RAPORU' : '🏁 VARDİYA BİTİŞ RAPORU';
+            const timeLabelText = currentMode === 'start' ? 'CMESS Çalıştırma Saati' : 'CMESS Kapatma Saati';
+
+            let html = `<div style="font-family: Arial, sans-serif; color: #333; line-height: 1.5; max-width: 420px;">`;
+            html += `<h2 style="color: #6b21a8; margin-bottom: 5px;">${modeTitle}</h2>`;
+            html += `<p style="margin: 0 0 10px 0;"><b>🏭 Hücre:</b> ${selectedCell}<br><b>✅ Rapor Tarihi:</b> ${currentDateStr}<br><b>⏰ ${timeLabelText}:</b> ${shiftTime}</p>`;
+            html += `<hr style="border: none; border-top: 1px solid #ddd; margin: 15px 0;">`;
+            
+            html += `<p><b>📋 Üretim ve Parça Tablosu:</b></p>`;
+            
+            // max-width sınırlaması ve inline-flex yapısı ile sağdaki boşluklar tamamen kaldırıldı
+            html += `<div style="display: inline-flex; border: 1px solid #cbd5e1; border-radius: 6px; overflow: hidden; background-color: #f8fafc; font-family: Arial, sans-serif; font-size: 13px;">`;
+
+            if (currentMode === 'start') {
+                // Parça No Sütunu
+                html += `<div style="border-right: 1px solid #cbd5e1;">`;
+                html += `<div style="background-color: #f1f5f9; color: #1e293b; font-weight: bold; padding: 10px 14px; border-bottom: 1px solid #cbd5e1; white-space: nowrap;">Parça No</div>`;
+                parts.forEach(partNo => {
+                    if (dataMap[partNo]) {
+                        html += `<div style="padding: 10px 14px; border-bottom: 1px solid #e2e8f0; font-family: monospace; background-color: #ffffff; white-space: nowrap;">${partNo}</div>`;
+                    }
+                });
+                html += `</div>`;
+
+                // Vardiya Başı Kalan Sütunu
+                html += `<div style="text-align: center;">`;
+                html += `<div style="background-color: #f1f5f9; color: #1e293b; font-weight: bold; padding: 10px 14px; border-bottom: 1px solid #cbd5e1; white-space: nowrap;">Vardiya Başı Kalan</div>`;
+                parts.forEach(partNo => {
+                    if (dataMap[partNo]) {
+                        html += `<div style="padding: 10px 14px; border-bottom: 1px solid #e2e8f0; background-color: #ffffff; white-space: nowrap;">${dataMap[partNo].kasa}</div>`;
+                    }
+                });
+                html += `</div>`;
+
+            } else {
+                // Parça No Sütunu
+                html += `<div style="border-right: 1px solid #cbd5e1;">`;
+                html += `<div style="background-color: #f1f5f9; color: #1e293b; font-weight: bold; padding: 10px 14px; border-bottom: 1px solid #cbd5e1; white-space: nowrap;">Parça No</div>`;
+                parts.forEach(partNo => {
+                    if (dataMap[partNo]) {
+                        html += `<div style="padding: 10px 14px; border-bottom: 1px solid #e2e8f0; font-family: monospace; background-color: #ffffff; white-space: nowrap;">${partNo}</div>`;
+                    }
+                });
+                html += `</div>`;
+
+                // Üretim Adeti Sütunu
+                html += `<div style="text-align: center; border-right: 1px solid #cbd5e1;">`;
+                html += `<div style="background-color: #f1f5f9; color: #1e293b; font-weight: bold; padding: 10px 14px; border-bottom: 1px solid #cbd5e1; white-space: nowrap;">Üretim Adeti</div>`;
+                parts.forEach(partNo => {
+                    if (dataMap[partNo]) {
+                        html += `<div style="padding: 10px 14px; border-bottom: 1px solid #e2e8f0; background-color: #ffffff; white-space: nowrap;">${dataMap[partNo].uretilen}</div>`;
+                    }
+                });
+                html += `</div>`;
+
+                // Kalan Sütunu
+                html += `<div style="text-align: center;">`;
+                html += `<div style="background-color: #f1f5f9; color: #1e293b; font-weight: bold; padding: 10px 14px; border-bottom: 1px solid #cbd5e1; white-space: nowrap;">Kalan</div>`;
+                parts.forEach(partNo => {
+                    if (dataMap[partNo]) {
+                        html += `<div style="padding: 10px 14px; border-bottom: 1px solid #e2e8f0; background-color: #ffffff; white-space: nowrap;">${dataMap[partNo].kalan}</div>`;
+                    }
+                });
+                html += `</div>`;
+            }
+
+            html += `</div>`; // Flex kapsayıcı sonu
+
+            if (photoLinksHTML) {
+                html += `<hr style="border: none; border-top: 1px solid #ddd; margin: 15px 0;">`;
+                html += `<p><b>📸 Rapor Fotoğrafları (ImgBB):</b><br>${photoLinksHTML}</p>`;
+            }
+
+            html += `</div>`;
+            return html;
         }
 
         function updatePreview() {
@@ -566,10 +658,12 @@
             updateProgress(15, "Sistem hazırlanıyor...");
 
             let photoLinksText = "";
+            let photoLinksHTML = "";
 
             if (uploadedPhotos.length > 0) {
                 const imgbbApiKey = "2a28102fa3199d44d2a11fd1e71ae2f0"; 
-                const linkArray = [];
+                const linkArrayText = [];
+                const linkArrayHTML = [];
                 const totalPhotos = uploadedPhotos.length;
 
                 for (let i = 0; i < totalPhotos; i++) {
@@ -587,17 +681,21 @@
                         });
                         const data = await res.json();
                         if (data.success) {
-                            linkArray.push(`🔗 Fotoğraf ${i + 1}: ${data.data.url}`);
+                            linkArrayText.push(`🔗 Fotoğraf ${i + 1}: ${data.data.url}`);
+                            linkArrayHTML.push(`🔗 Fotoğraf ${i + 1}: <a href="${data.data.url}" target="_blank">${data.data.url}</a>`);
                         }
                     } catch (err) {
                         console.error("ImgBB yükleme hatası:", err);
                     }
                 }
-                photoLinksText = linkArray.join('\n');
+                photoLinksText = linkArrayText.join('\n');
+                photoLinksHTML = linkArrayHTML.join('<br>');
             }
 
             updateProgress(70, "E-posta gönderiliyor...");
-            const finalMessage = generateReportText(photoLinksText);
+
+            const textMessageWhatsApp = generateReportText() + (photoLinksText ? `----------------------------------\n📸 Rapor Fotoğrafları:\n${photoLinksText}` : '');
+            const htmlMailBody = generateHTMLMailBody(photoLinksHTML);
 
             const currentDateStr = new Date().toLocaleDateString('tr-TR');
             const modeText = currentMode === 'start' ? 'Vardiya Başlangıcı' : 'Vardiya Bitişi';
@@ -607,7 +705,7 @@
                 const templateParams = {
                     to_email: "ozgur.zngn@gmail.com", 
                     report_title: dynamicSubject,
-                    message_body: finalMessage
+                    message_body: htmlMailBody 
                 };
 
                 const response = await emailjs.send('service_nar6lhb', 'template_0d6dg8g', templateParams);
@@ -616,12 +714,15 @@
                     updateProgress(100, "İşlem Tamamlandı!");
                     showNotification("✔ E-posta gönderildi. WhatsApp onay penceresi açılıyor...", "success");
                     
-                    // Kullanıcıya WhatsApp için onay mesajı gösteriyoruz
+                    // 2. AŞAMA: WhatsApp Onay İletisi (confirm)
                     setTimeout(() => {
                         const userConfirmed = confirm("E-posta başarıyla gönderildi!\nŞimdi WhatsApp üzerinden paylaşım yapmak için onay veriyor musunuz?");
                         
                         if (userConfirmed) {
-                            triggerWhatsApp(finalMessage);
+                            triggerWhatsApp(textMessageWhatsApp);
+                        } else {
+                            // Kullanıcı WhatsApp paylaşımını iptal ederse de sayfayı temizlemek için yenile
+                            location.reload();
                         }
                     }, 500);
 
@@ -634,7 +735,7 @@
             }
         }
 
-        // WhatsApp Yönlendirme Fonksiyonu
+        // WhatsApp Yönlendirme ve Sayfa Yenileme / Veri Temizleme Fonksiyonu
         async function triggerWhatsApp(message) {
             const filesToShare = [];
             for (let i = 0; i < uploadedPhotos.length; i++) {
@@ -656,12 +757,16 @@
                         files: filesToShare
                     });
                     
+                    // WhatsApp paylaşımı sonrası veri temizleme için sayfa yenileme
                     setTimeout(() => {
                         location.reload();
                     }, 1000);
                     return;
                 } catch (err) {
-                    if (err.name === 'AbortError') return;
+                    if (err.name === 'AbortError') {
+                        location.reload();
+                        return;
+                    }
                 }
             }
 
@@ -669,6 +774,7 @@
             const whatsappUrl = `https://api.whatsapp.com/send?text=${encodedMessage}`;
             window.open(whatsappUrl, '_blank');
 
+            // WhatsApp bağlantısı açıldıktan sonra sayfayı sıfırla
             setTimeout(() => {
                 location.reload();
             }, 1500);
