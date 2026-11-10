@@ -215,7 +215,7 @@
 
         <!-- Action Buttons & Progress Bar Group -->
         <div class="space-y-2.5 pt-1">
-            <!-- Progress / Loading Bar Modal Card (GÖNDERME BUTONUNUN ÜSTÜNE TAŞINDI) -->
+            <!-- Progress / Loading Bar Modal Card -->
             <div id="loadingCard" class="hidden bg-cardBg border border-purple-500/50 rounded-2xl p-4 shadow-2xl space-y-3">
                 <div class="flex items-center justify-between text-xs text-purple-200">
                     <span id="loadingStatusText" class="font-bold flex items-center gap-2">
@@ -454,7 +454,6 @@
             setTimeout(() => box.classList.remove('hidden'), 10);
         }
 
-        // Buton Üstündeki Yükleme Barını Güncelleyen Fonksiyon
         function updateProgress(percent, statusMessage) {
             const loadingCard = document.getElementById('loadingCard');
             const progressBar = document.getElementById('progressBar');
@@ -475,7 +474,6 @@
             }
         }
 
-        // WhatsApp ve Panoya Kopyalama İçin Düz Metin
         function generateReportText() {
             const shiftTime = document.getElementById('shiftTime').value;
             if (!selectedCell || !shiftTime) return null;
@@ -518,7 +516,6 @@
             return message;
         }
 
-        // E-Posta İçin Fotoğrafları Şık Tablo İçinde Gösteren Fonksiyon
         function generateHTMLMailBody(photoUrls = []) {
             const shiftTime = document.getElementById('shiftTime').value;
             if (!selectedCell || !shiftTime) return "";
@@ -543,9 +540,8 @@
             html += `<p style="margin: 0 0 10px 0;"><b>🏭 Hücre:</b> ${selectedCell}<br><b>✅ Rapor Tarihi:</b> ${currentDateStr}<br><b>⏰ ${timeLabelText}:</b> ${shiftTime}</p>`;
             html += `<hr style="border: none; border-top: 1px solid #ddd; margin: 15px 0;">`;
             
-            html += `<p><b>📋 Üretim ve Parça Tablosu:</b></p>`;
+            html += `<p><b>📋 Üretim and Parça Tablosu:</b></p>`;
             
-            // Veri Tablosu
             html += `<div style="display: inline-flex; border: 1px solid #cbd5e1; border-radius: 6px; overflow: hidden; background-color: #f8fafc; font-family: Arial, sans-serif; font-size: 13px;">`;
 
             if (currentMode === 'start') {
@@ -596,9 +592,8 @@
                 html += `</div>`;
             }
 
-            html += `</div>`; // Veri Tablosu Sonu
+            html += `</div>`;
 
-            // Fotoğraflar İçin Şık HTML Tablosu (Önizleme Izgarası)
             if (photoUrls && photoUrls.length > 0) {
                 html += `<hr style="border: none; border-top: 1px solid #ddd; margin: 15px 0;">`;
                 html += `<p><b>📸 Rapor Fotoğrafları:</b></p>`;
@@ -648,7 +643,7 @@
             showNotification("Rapor metni panoya kopyalandı!", "success");
         }
 
-        // TEK BUTON: Fotoğrafları Yükle, E-Posta Gönder ve WhatsApp'a Aktar
+        // FreeImage.host Entegrasyonlu Gönderim Süreci
         async function sendReportProcess() {
             if (!selectedCell) {
                 showNotification("Lütfen önce bir hücre seçiniz!", "error");
@@ -660,7 +655,6 @@
                 return;
             }
 
-            // 1. AŞAMA: Başlangıç
             showNotification("Fotoğraflar ve Rapor Hazırlanıyor...", "success");
             updateProgress(15, "Sistem hazırlanıyor...");
 
@@ -668,7 +662,7 @@
             let photoUrlArray = [];
 
             if (uploadedPhotos.length > 0) {
-                const imgbbApiKey = "2a28102fa3199d44d2a11fd1e71ae2f0"; 
+                const freeImageApiKey = "6d207e02198a847aa98d0a2a901485a5"; 
                 const linkArrayText = [];
                 const totalPhotos = uploadedPhotos.length;
 
@@ -678,20 +672,25 @@
 
                     try {
                         const base64Data = uploadedPhotos[i].data.split(',')[1]; 
+                        
                         const formData = new FormData();
-                        formData.append("image", base64Data);
+                        formData.append("key", freeImageApiKey);
+                        formData.append("action", "upload");
+                        formData.append("source", base64Data);
+                        formData.append("format", "json");
 
-                        const res = await fetch(`https://api.imgbb.com/1/upload?key=${imgbbApiKey}`, {
+                        const res = await fetch("https://freeimage.host/api/1/upload", {
                             method: "POST",
                             body: formData
                         });
                         const data = await res.json();
-                        if (data.success) {
-                            linkArrayText.push(`🔗 Fotoğraf ${i + 1}: ${data.data.url}`);
-                            photoUrlArray.push(data.data.url);
+                        
+                        if (data.status_code === 200 && data.image && data.image.url) {
+                            linkArrayText.push(`🔗 Fotoğraf ${i + 1}: ${data.image.url}`);
+                            photoUrlArray.push(data.image.url);
                         }
                     } catch (err) {
-                        console.error("ImgBB yükleme hatası:", err);
+                        console.error("FreeImage.host yükleme hatası:", err);
                     }
                 }
                 photoLinksText = linkArrayText.join('\n');
@@ -719,14 +718,12 @@
                     updateProgress(100, "İşlem Tamamlandı!");
                     showNotification("✔ E-posta gönderildi. WhatsApp onay penceresi açılıyor...", "success");
                     
-                    // 2. AŞAMA: WhatsApp Onay İletisi (confirm)
                     setTimeout(() => {
                         const userConfirmed = confirm("E-posta başarıyla gönderildi!\nŞimdi WhatsApp üzerinden paylaşım yapmak için onay veriyor musunuz?");
                         
                         if (userConfirmed) {
                             triggerWhatsApp(textMessageWhatsApp);
                         } else {
-                            // Kullanıcı WhatsApp paylaşımını iptal ederse de sayfayı temizlemek için yenile
                             location.reload();
                         }
                     }, 500);
@@ -740,7 +737,6 @@
             }
         }
 
-        // WhatsApp Yönlendirme ve Sayfa Yenileme / Veri Temizleme Fonksiyonu
         async function triggerWhatsApp(message) {
             const filesToShare = [];
             for (let i = 0; i < uploadedPhotos.length; i++) {
@@ -762,7 +758,6 @@
                         files: filesToShare
                     });
                     
-                    // WhatsApp paylaşımı sonrası veri temizleme için sayfa yenileme
                     setTimeout(() => {
                         location.reload();
                     }, 1000);
@@ -779,7 +774,6 @@
             const whatsappUrl = `https://api.whatsapp.com/send?text=${encodedMessage}`;
             window.open(whatsappUrl, '_blank');
 
-            // WhatsApp bağlantısı açıldıktan sonra sayfayı sıfırla
             setTimeout(() => {
                 location.reload();
             }, 1500);
